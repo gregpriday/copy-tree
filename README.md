@@ -56,6 +56,8 @@ Install `copy-tree` globally with Composer to use the `ctree` command from anywh
 composer global require gregpriday/copy-tree
 ```
 
+Run the same command to upgrade to the latest version.
+
 Ensure the Composer global bin directory is in your `PATH`. Typically, this is `~/.composer/vendor/bin` or `~/.config/composer/vendor/bin` for Unix systems. Add this to your `.bashrc` or `.zshrc`:
 
 ```bash
