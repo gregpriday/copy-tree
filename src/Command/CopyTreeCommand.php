@@ -46,7 +46,7 @@ class CopyTreeCommand extends Command
             $fileContentsOutput = [];
 
             foreach (['app', 'tests', 'database/migrations'] as $directory) {
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path . '/' . $directory, $filter, $depth);
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path.'/'.$directory, $filter, $depth);
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             }
@@ -116,12 +116,11 @@ class CopyTreeCommand extends Command
     /**
      * Check if the given path is the root directory of a Laravel project.
      *
-     * @param string $path The path to check.
-     *
+     * @param  string  $path  The path to check.
      * @return bool True if the path is the root directory of a Laravel project, false otherwise.
      */
     private function isLaravelProjectRoot($path): bool
     {
-        return file_exists($path . '/artisan') && file_exists($path . '/composer.json');
+        return file_exists($path.'/artisan') && file_exists($path.'/composer.json');
     }
 }
