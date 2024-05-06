@@ -28,17 +28,45 @@ class Clipboard
         $this->contents = $contents;
 
         if (stripos($this->os, 'Windows') !== false) {
-            $this->runCommand(['cmd', '/c', 'echo', $this->contents, '|', 'clip']);
+            $this->runWindowsCommand();
         } elseif (stripos($this->os, 'Darwin') !== false) {
-            $this->runCommand(['echo', $this->contents, '|', 'pbcopy']);
+            $this->runMacCommand();
         } else {
-            $this->runCommand(['echo', $this->contents, '|', 'xclip', '-selection', 'clipboard']);
+            $this->runLinuxCommand();
         }
     }
 
-    private function runCommand(array $command): void
+    private function runWindowsCommand(): void
     {
-        $process = new Process($command);
+        // Windows `clip` command cannot be piped directly via Process
+        // We need to use a temporary file to securely pass the data
+        $tmpFile = tmpfile();
+        fwrite($tmpFile, $this->contents);
+        $tmpPath = stream_get_meta_data($tmpFile)['uri'];
+        $process = new Process(['cmd', '/c', 'clip', '<', $tmpPath]);
+        $process->run();
+        fclose($tmpFile);  // Clean up the temporary file
+
+        if (!$process->isSuccessful()) {
+            throw new ProcessFailedException($process);
+        }
+    }
+
+    private function runMacCommand(): void
+    {
+        $process = Process::fromShellCommandline('pbcopy');
+        $process->setInput($this->contents);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            throw new ProcessFailedException($process);
+        }
+    }
+
+    private function runLinuxCommand(): void
+    {
+        $process = Process::fromShellCommandline('xclip -selection clipboard');
+        $process->setInput($this->contents);
         $process->run();
 
         if (!$process->isSuccessful()) {

@@ -1,4 +1,4 @@
 <?php
 
-// This is a test
-echo "Hello, World!";
+// This is a simple test file
+echo "Hello, World!\n";

@@ -14,11 +14,12 @@ use Exception;
 
 class CopyTreeCommand extends Command
 {
-    protected static string $defaultName = 'app:copy-tree';
+    protected static $defaultName = 'app:copy-tree';
 
     protected function configure(): void
     {
         $this
+            ->setName('app:copy-tree')
             ->setDescription('Copies the directory tree to the clipboard and optionally displays it.')
             ->setHelp('This command copies the directory tree to the clipboard by default. You can also display the tree in the console or skip copying to the clipboard.')
             ->addArgument('path', InputArgument::OPTIONAL, 'The directory path', getcwd())
@@ -41,10 +42,12 @@ class CopyTreeCommand extends Command
         $combinedOutput = array_merge($treeOutput, ["", '---', ""], $fileContentsOutput);
         $formattedOutput = implode("\n", $combinedOutput);
 
+        $fileCount = count($fileContentsOutput) / 6; // Count the number of file contents
+
         if (!$noClipboard) {
             $clip = new Clipboard();
             $clip->copy($formattedOutput);
-            $io->success('Output has been copied to the clipboard.');
+            $io->success(sprintf('%d file contents have been copied to the clipboard.', $fileCount));
         }
 
         if ($displayOutput) {
