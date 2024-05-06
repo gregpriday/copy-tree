@@ -10,12 +10,11 @@ use Symfony\Component\Process\Process;
  *
  * Inspired by and adapted from Ed Grosvenor's PHP Clipboard implementation.
  * Original repository: https://github.com/edgrosvenor/php-clipboard
- *
- * @package GregPriday\CopyTree
  */
 class Clipboard
 {
     private $contents;
+
     private $os;
 
     public function __construct()
@@ -47,7 +46,7 @@ class Clipboard
         $process->run();
         fclose($tmpFile);  // Clean up the temporary file
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
     }
@@ -58,7 +57,7 @@ class Clipboard
         $process->setInput($this->contents);
         $process->run();
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
     }
@@ -69,7 +68,7 @@ class Clipboard
         $process->setInput($this->contents);
         $process->run();
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
     }

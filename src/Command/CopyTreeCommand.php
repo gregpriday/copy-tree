@@ -2,15 +2,15 @@
 
 namespace GregPriday\CopyTree\Command;
 
+use DirectoryIterator;
+use Exception;
+use GregPriday\CopyTree\Clipboard;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use GregPriday\CopyTree\Clipboard;
-use DirectoryIterator;
-use Exception;
 
 class CopyTreeCommand extends Command
 {
@@ -39,12 +39,12 @@ class CopyTreeCommand extends Command
         $displayOutput = $input->getOption('display');
 
         [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth);
-        $combinedOutput = array_merge($treeOutput, ["", '---', ""], $fileContentsOutput);
+        $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
         $formattedOutput = implode("\n", $combinedOutput);
 
         $fileCount = count($fileContentsOutput) / 6; // Count the number of file contents
 
-        if (!$noClipboard) {
+        if (! $noClipboard) {
             $clip = new Clipboard();
             $clip->copy($formattedOutput);
             $io->success(sprintf('%d file contents have been copied to the clipboard.', $fileCount));
@@ -67,28 +67,30 @@ class CopyTreeCommand extends Command
         }
 
         foreach (new DirectoryIterator($directory) as $fileInfo) {
-            if ($fileInfo->isDot()) continue;
+            if ($fileInfo->isDot()) {
+                continue;
+            }
 
             $path = $fileInfo->getPathname();
             if ($fileInfo->isDir()) {
-                $treeOutput[] = $prefix . $fileInfo->getFilename();
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $prefix . "│   ");
+                $treeOutput[] = $prefix.$fileInfo->getFilename();
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $prefix.'│   ');
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
                 if (fnmatch($fileFilter, $fileInfo->getFilename())) {
-                    $treeOutput[] = $prefix . $fileInfo->getFilename();
-                    $fileContentsOutput[] = "";
-                    $fileContentsOutput[] = "> " . $path;
-                    $fileContentsOutput[] = "```";
+                    $treeOutput[] = $prefix.$fileInfo->getFilename();
+                    $fileContentsOutput[] = '';
+                    $fileContentsOutput[] = '> '.$path;
+                    $fileContentsOutput[] = '```';
                     try {
                         $content = file_get_contents($path);
                         $fileContentsOutput[] = $content;
                     } catch (Exception $e) {
                         $fileContentsOutput[] = $e->getMessage();
                     }
-                    $fileContentsOutput[] = "```";
-                    $fileContentsOutput[] = "";
+                    $fileContentsOutput[] = '```';
+                    $fileContentsOutput[] = '';
                 }
             }
         }

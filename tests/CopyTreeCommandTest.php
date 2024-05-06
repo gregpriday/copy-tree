@@ -3,10 +3,9 @@
 namespace GregPriday\CopyTree\Tests;
 
 use GregPriday\CopyTree\Command\CopyTreeCommand;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
-use Symfony\Component\Console\Output\OutputInterface;
-use PHPUnit\Framework\TestCase;
 
 class CopyTreeCommandTest extends TestCase
 {
@@ -24,7 +23,7 @@ class CopyTreeCommandTest extends TestCase
     public function testExecuteWithDefaultOptions(): void
     {
         $this->commandTester->execute([
-            'path' => __DIR__ . '/dir'
+            'path' => __DIR__.'/dir',
         ]);
 
         $output = $this->commandTester->getDisplay();
@@ -35,8 +34,8 @@ class CopyTreeCommandTest extends TestCase
     public function testNoClipboardOption(): void
     {
         $this->commandTester->execute([
-            'path'          => __DIR__ . '/dir',
-            '--no-clipboard' => true
+            'path' => __DIR__.'/dir',
+            '--no-clipboard' => true,
         ]);
 
         $output = $this->commandTester->getDisplay();
@@ -46,12 +45,11 @@ class CopyTreeCommandTest extends TestCase
     public function testDisplayOption(): void
     {
         $this->commandTester->execute([
-            'path'    => __DIR__ . '/dir',
-            '--display' => true
+            'path' => __DIR__.'/dir',
+            '--display' => true,
         ]);
 
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('>', $output); // Check for part of the output format
     }
 }
-
