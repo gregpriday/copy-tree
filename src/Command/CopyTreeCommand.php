@@ -26,7 +26,8 @@ class CopyTreeCommand extends Command
             ->addOption('filter', 'f', InputOption::VALUE_OPTIONAL, 'File pattern filter', '*')
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree', 10)
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
-            ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.');
+            ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
+            ->addOption('laravel', null, InputOption::VALUE_NONE, 'Copy Laravel-specific directories (app, tests, database/migrations) when in a Laravel project root');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -38,7 +39,21 @@ class CopyTreeCommand extends Command
         $noClipboard = $input->getOption('no-clipboard');
         $displayOutput = $input->getOption('display');
 
-        [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth);
+        $laravelMode = $input->getOption('laravel');
+
+        if ($laravelMode && $this->isLaravelProjectRoot($path)) {
+            $treeOutput = [];
+            $fileContentsOutput = [];
+
+            foreach (['app', 'tests', 'database/migrations'] as $directory) {
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path . '/' . $directory, $filter, $depth);
+                $treeOutput = array_merge($treeOutput, $subTreeOutput);
+                $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
+            }
+        } else {
+            [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth);
+        }
+
         $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
         $formattedOutput = implode("\n", $combinedOutput);
 
@@ -96,5 +111,17 @@ class CopyTreeCommand extends Command
         }
 
         return [$treeOutput, $fileContentsOutput];
+    }
+
+    /**
+     * Check if the given path is the root directory of a Laravel project.
+     *
+     * @param string $path The path to check.
+     *
+     * @return bool True if the path is the root directory of a Laravel project, false otherwise.
+     */
+    private function isLaravelProjectRoot($path): bool
+    {
+        return file_exists($path . '/artisan') && file_exists($path . '/composer.json');
     }
 }
