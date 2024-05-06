@@ -6,6 +6,19 @@
 
 This command line tool allows you to copy the entire structure of a directory, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews or collaborative debugging sessions.
 
+## Prerequisites
+
+Before installing and using `copy-tree`, make sure to have the necessary clipboard utilities installed on your system:
+
+- **Linux**: Install `xclip` or `xsel` which is used by the tool to access the clipboard.
+  ```bash
+  sudo apt-get update && sudo apt-get install -y xclip
+  # or for xsel
+  sudo apt-get install -y xsel
+  ```
+- **macOS**: macOS comes with `pbcopy` and `pbpaste` preinstalled, so no additional installation is necessary.
+- **Windows**: Windows has the `clip` command available by default, so no additional installation is required.
+
 ## Installation
 
 You can install the package via Composer:
