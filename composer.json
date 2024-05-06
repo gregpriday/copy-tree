@@ -35,6 +35,9 @@
             "GregPriday\\CopyTree\\Tests\\": "tests"
         }
     },
+    "bin": [
+        "bin/ctree"
+    ],
     "scripts": {
         "test": "vendor/bin/phpunit",
             "test-coverage": "vendor/bin/phpunit --coverage",
