@@ -1,22 +1,14 @@
-# Copy a directory and its files to your clipboard.
+# Copy a directory and its files to your clipboard
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/gregpriday/copy-tree.svg?style=flat-square)](https://packagist.org/packages/gregpriday/copy-tree)
 [![Tests](https://img.shields.io/github/actions/workflow/status/gregpriday/copy-tree/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/gregpriday/copy-tree/actions/workflows/run-tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/gregpriday/copy-tree.svg?style=flat-square)](https://packagist.org/packages/gregpriday/copy-tree)
 
-This is where your description should go. Try and limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/copy-tree.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/copy-tree)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+This command line tool allows you to copy the entire structure of a directory, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews or collaborative debugging sessions.
 
 ## Installation
 
-You can install the package via composer:
+You can install the package via Composer:
 
 ```bash
 composer require gregpriday/copy-tree
@@ -24,12 +16,62 @@ composer require gregpriday/copy-tree
 
 ## Usage
 
-```php
-$skeleton = new GregPriday\CopyTree();
-echo $skeleton->echoPhrase('Hello, GregPriday!');
+After installation, you can run the `copy-tree` command directly from your terminal. Here's how you can use the command:
+
+```bash
+# Display the help information
+./vendor/bin/ctree --help
+
+# Copy current directory to clipboard and optionally display the output
+./vendor/bin/ctree --display
+
+# Specify a directory path
+./vendor/bin/ctree --path=/path/to/directory
+
+# Avoid copying to clipboard
+./vendor/bin/ctree --no-clipboard
+
+# Specify depth of directory tree
+./vendor/bin/ctree --depth=3
 ```
 
+### Global Installation and Usage
+
+Install `copy-tree` globally with Composer to use the `ctree` command from anywhere in your terminal:
+
+```bash
+composer global require gregpriday/copy-tree
+```
+
+Ensure the Composer global bin directory is in your `PATH`. Typically, this is `~/.composer/vendor/bin` or `~/.config/composer/vendor/bin` for Unix systems. Add this to your `.bashrc` or `.zshrc`:
+
+```bash
+export PATH="$PATH:$HOME/.composer/vendor/bin"
+```
+
+Reload your configuration:
+
+```bash
+source ~/.bashrc
+# Or, if using zsh
+source ~/.zshrc
+```
+
+Now, you can use `ctree` from any directory:
+
+```bash
+# Copy the current directory to the clipboard
+ctree
+
+# Copy with specific depth and display output
+ctree --path=/path/to/directory --depth=2 --display
+```
+
+This setup streamlines the installation and usage process, allowing quick and flexible use of `ctree` across your system.
+
 ## Testing
+
+Run the tests with:
 
 ```bash
 composer test
@@ -37,15 +79,15 @@ composer test
 
 ## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+For details on recent changes, check out the [CHANGELOG](CHANGELOG.md).
 
 ## Contributing
 
-Please see [CONTRIBUTING](https://github.com/spatie/.github/blob/main/CONTRIBUTING.md) for details.
+Contributions are welcome! Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-## Security Vulnerabilities
+## Security
 
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+If you discover any security related issues, please email greg@siteorigin.com instead of using the issue tracker.
 
 ## Credits
 
