@@ -1,7 +1,15 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__.'/../vendor/autoload.php';
+if (file_exists(__DIR__ . '/../../../autoload.php')) {
+    // The path when installed globally
+    require __DIR__ . '/../../../autoload.php';
+} elseif (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    // The path when installed locally
+    require __DIR__ . '/../vendor/autoload.php';
+} else {
+    throw new Exception('Autoloader not found.');
+}
 
 use GregPriday\CopyTree\Command\CopyTreeCommand;
 use Symfony\Component\Console\Application;
