@@ -45,7 +45,7 @@ class CopyTreeCommand extends Command
             $treeOutput = [];
             $fileContentsOutput = [];
 
-            foreach (['app', 'tests', 'database/migrations'] as $directory) {
+            foreach (['app', 'database/migrations'] as $directory) {
                 [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path.'/'.$directory, $filter, $depth);
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
