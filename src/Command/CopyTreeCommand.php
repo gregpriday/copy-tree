@@ -86,15 +86,20 @@ class CopyTreeCommand extends Command
                 continue;
             }
 
+            $filename = $fileInfo->getFilename();
+            if ($filename[0] === '.') {
+                continue;
+            }
+
             $path = $fileInfo->getPathname();
             if ($fileInfo->isDir()) {
-                $treeOutput[] = $prefix.$fileInfo->getFilename();
+                $treeOutput[] = $prefix.$filename;
                 [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $prefix.'│   ');
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
-                if (fnmatch($fileFilter, $fileInfo->getFilename())) {
-                    $treeOutput[] = $prefix.$fileInfo->getFilename();
+                if (fnmatch($fileFilter, $filename)) {
+                    $treeOutput[] = $prefix.$filename;
                     $fileContentsOutput[] = '';
                     $fileContentsOutput[] = '> '.$path;
                     $fileContentsOutput[] = '```';
