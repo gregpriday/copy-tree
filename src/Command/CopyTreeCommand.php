@@ -67,6 +67,7 @@ class CopyTreeCommand extends Command
                 $io->success(sprintf('%d file contents have been saved to %s.', $fileCount, $outputFile));
             } catch (Exception $e) {
                 $io->error(sprintf('Failed to save output to file: %s', $e->getMessage()));
+
                 return Command::FAILURE;
             }
         } elseif (! $noClipboard) {
