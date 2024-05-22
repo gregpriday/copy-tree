@@ -26,6 +26,7 @@ class CopyTreeCommand extends Command
             ->addOption('filter', 'f', InputOption::VALUE_OPTIONAL, 'File pattern filter', '*')
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree', 10)
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
+            ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
             ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('laravel', null, InputOption::VALUE_NONE, 'Copy Laravel-specific directories (app, tests, database/migrations) when in a Laravel project root');
     }
@@ -38,6 +39,7 @@ class CopyTreeCommand extends Command
         $depth = $input->getOption('depth');
         $noClipboard = $input->getOption('no-clipboard');
         $displayOutput = $input->getOption('display');
+        $outputFile = $input->getOption('output');
 
         $laravelMode = $input->getOption('laravel');
 
@@ -59,7 +61,15 @@ class CopyTreeCommand extends Command
 
         $fileCount = count($fileContentsOutput) / 6; // Count the number of file contents
 
-        if (! $noClipboard) {
+        if ($outputFile) {
+            try {
+                file_put_contents($outputFile, $formattedOutput);
+                $io->success(sprintf('%d file contents have been saved to %s.', $fileCount, $outputFile));
+            } catch (Exception $e) {
+                $io->error(sprintf('Failed to save output to file: %s', $e->getMessage()));
+                return Command::FAILURE;
+            }
+        } elseif (! $noClipboard) {
             $clip = new Clipboard();
             $clip->copy($formattedOutput);
             $io->success(sprintf('%d file contents have been copied to the clipboard.', $fileCount));
