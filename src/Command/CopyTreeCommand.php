@@ -149,12 +149,13 @@ class CopyTreeCommand extends Command
      * Generate a default output filename based on the directory name and current date-time.
      *
      * @param  string  $path  The directory path.
-     * @return string  The generated output filename.
+     * @return string The generated output filename.
      */
     private function generateDefaultOutputFilename($path): string
     {
         $directoryName = basename($path);
         $timestamp = date('Y-m-d_H-i-s');
+
         return sprintf('%s_tree_%s.txt', $directoryName, $timestamp);
     }
 }
