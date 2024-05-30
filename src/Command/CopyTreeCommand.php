@@ -41,6 +41,11 @@ class CopyTreeCommand extends Command
         $displayOutput = $input->getOption('display');
         $outputFile = $input->getOption('output');
 
+        // If output is specified as a flag but no value is given, set the default filename
+        if ($input->hasParameterOption(['--output', '-o']) && is_null($outputFile)) {
+            $outputFile = $this->generateDefaultOutputFilename($path);
+        }
+
         $laravelMode = $input->getOption('laravel');
 
         if ($laravelMode && $this->isLaravelProjectRoot($path)) {
@@ -138,5 +143,18 @@ class CopyTreeCommand extends Command
     private function isLaravelProjectRoot($path): bool
     {
         return file_exists($path.'/artisan') && file_exists($path.'/composer.json');
+    }
+
+    /**
+     * Generate a default output filename based on the directory name and current date-time.
+     *
+     * @param  string  $path  The directory path.
+     * @return string  The generated output filename.
+     */
+    private function generateDefaultOutputFilename($path): string
+    {
+        $directoryName = basename($path);
+        $timestamp = date('Y-m-d_H-i-s');
+        return sprintf('%s_tree_%s.txt', $directoryName, $timestamp);
     }
 }
