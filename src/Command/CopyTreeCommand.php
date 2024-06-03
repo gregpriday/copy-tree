@@ -2,9 +2,9 @@
 
 namespace GregPriday\CopyTree\Command;
 
-use DirectoryIterator;
 use Exception;
 use GregPriday\CopyTree\Clipboard;
+use GregPriday\CopyTree\Ruleset\RulesetInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,7 +14,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class CopyTreeCommand extends Command
 {
-    protected static $defaultName = 'app:copy-tree';
+    protected static string $defaultName = 'app:copy-tree';
 
     protected function configure(): void
     {
@@ -28,7 +28,7 @@ class CopyTreeCommand extends Command
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
             ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
-            ->addOption('laravel', null, InputOption::VALUE_NONE, 'Copy Laravel-specific directories (app, tests, database/migrations) when in a Laravel project root');
+            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, 'Ruleset to apply (laravel, sveltekit)', 'default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,20 +46,8 @@ class CopyTreeCommand extends Command
             $outputFile = $this->generateDefaultOutputFilename($path);
         }
 
-        $laravelMode = $input->getOption('laravel');
-
-        if ($laravelMode && $this->isLaravelProjectRoot($path)) {
-            $treeOutput = [];
-            $fileContentsOutput = [];
-
-            foreach (['app', 'database/migrations', 'routes'] as $directory) {
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path.'/'.$directory, $filter, $depth);
-                $treeOutput = array_merge($treeOutput, $subTreeOutput);
-                $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
-            }
-        } else {
-            [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth);
-        }
+        $ruleset = $this->getRulesetInstance($input->getOption('ruleset'));
+        [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth, $ruleset);
 
         $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
         $formattedOutput = implode("\n", $combinedOutput);
@@ -88,7 +76,38 @@ class CopyTreeCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function displayTree($directory, $fileFilter, $depth, $prefix = ''): array
+    private function getRulesetInstance(string $ruleset): ?RulesetInterface
+    {
+        $rulesetClassName = $this->findRulesetClass($ruleset);
+        if ($rulesetClassName) {
+            return new $rulesetClassName();
+        }
+
+        return null;
+    }
+
+    private function findRulesetClass(string $ruleset): ?string
+    {
+        $rulesetPath = __DIR__ . '/../Ruleset';
+        $rulesetFiles = scandir($rulesetPath);
+
+        $rulesetClassName = null;
+        $rulesetPattern = strtolower($ruleset) . 'ruleset';
+
+        foreach ($rulesetFiles as $file) {
+            if (preg_match('/^[^.].*\.php$/', $file)) {
+                $className = basename($file, '.php');
+                if (strtolower($className) === $rulesetPattern) {
+                    $rulesetClassName = 'GregPriday\\CopyTree\\Ruleset\\' . $className;
+                    break;
+                }
+            }
+        }
+
+        return $rulesetClassName;
+    }
+
+    private function displayTree($directory, $fileFilter, $depth, ?RulesetInterface $ruleset, $prefix = ''): array
     {
         $treeOutput = [];
         $fileContentsOutput = [];
@@ -97,7 +116,7 @@ class CopyTreeCommand extends Command
             return [$treeOutput, $fileContentsOutput];
         }
 
-        foreach (new DirectoryIterator($directory) as $fileInfo) {
+        foreach (new \DirectoryIterator($directory) as $fileInfo) {
             if ($fileInfo->isDot()) {
                 continue;
             }
@@ -109,12 +128,15 @@ class CopyTreeCommand extends Command
 
             $path = $fileInfo->getPathname();
             if ($fileInfo->isDir()) {
+                if ($ruleset && !$ruleset->shouldIncludeDirectory($path)) {
+                    continue;
+                }
                 $treeOutput[] = $prefix.$filename;
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $prefix.'│   ');
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $ruleset, $prefix.'│   ');
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
-                if (fnmatch($fileFilter, $filename)) {
+                if (fnmatch($fileFilter, $filename) && (!$ruleset || $ruleset->shouldIncludeFile($path))) {
                     $treeOutput[] = $prefix.$filename;
                     $fileContentsOutput[] = '';
                     $fileContentsOutput[] = '> '.$path;
@@ -132,17 +154,6 @@ class CopyTreeCommand extends Command
         }
 
         return [$treeOutput, $fileContentsOutput];
-    }
-
-    /**
-     * Check if the given path is the root directory of a Laravel project.
-     *
-     * @param  string  $path  The path to check.
-     * @return bool True if the path is the root directory of a Laravel project, false otherwise.
-     */
-    private function isLaravelProjectRoot($path): bool
-    {
-        return file_exists($path.'/artisan') && file_exists($path.'/composer.json');
     }
 
     /**
