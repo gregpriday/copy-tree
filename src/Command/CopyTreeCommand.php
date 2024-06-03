@@ -107,7 +107,7 @@ class CopyTreeCommand extends Command
         return $rulesetClassName;
     }
 
-    private function displayTree($directory, $fileFilter, $depth, ?RulesetInterface $ruleset, $prefix = ''): array
+    private function displayTree($directory, $fileFilter, $depth, ?RulesetInterface $ruleset, $prefix = '', $baseDir = ''): array
     {
         $treeOutput = [];
         $fileContentsOutput = [];
@@ -120,26 +120,27 @@ class CopyTreeCommand extends Command
             if ($fileInfo->isDot()) {
                 continue;
             }
-
             $filename = $fileInfo->getFilename();
-            if ($filename[0] === '.') {
+            if (str_starts_with($filename, '.')) {
                 continue;
             }
 
             $path = $fileInfo->getPathname();
+            $relativePath = $baseDir ? $baseDir . '/' . $filename : $filename;
+
             if ($fileInfo->isDir()) {
-                if ($ruleset && !$ruleset->shouldIncludeDirectory($path)) {
+                if ($ruleset && !$ruleset->shouldIncludeDirectory($relativePath)) {
                     continue;
                 }
-                $treeOutput[] = $prefix.$filename;
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $ruleset, $prefix.'│   ');
+                $treeOutput[] = $prefix . $filename;
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $ruleset, $prefix . '│   ', $relativePath);
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
-                if (fnmatch($fileFilter, $filename) && (!$ruleset || $ruleset->shouldIncludeFile($path))) {
-                    $treeOutput[] = $prefix.$filename;
+                if (fnmatch($fileFilter, $filename) && (!$ruleset || $ruleset->shouldIncludeFile($relativePath))) {
+                    $treeOutput[] = $prefix . $filename;
                     $fileContentsOutput[] = '';
-                    $fileContentsOutput[] = '> '.$path;
+                    $fileContentsOutput[] = '> ' . $relativePath;
                     $fileContentsOutput[] = '```';
                     try {
                         $content = file_get_contents($path);
@@ -159,7 +160,7 @@ class CopyTreeCommand extends Command
     /**
      * Generate a default output filename based on the directory name and current date-time.
      *
-     * @param  string  $path  The directory path.
+     * @param string $path The directory path.
      * @return string The generated output filename.
      */
     private function generateDefaultOutputFilename($path): string
