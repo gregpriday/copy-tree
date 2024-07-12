@@ -9,25 +9,44 @@ class JsonRuleset
 {
     private array $rules;
 
+    private string $rulesetDir;
+
     public function __construct(string $jsonFilePath)
     {
-        $this->loadAndValidateJson($jsonFilePath);
+        $this->rulesetDir = dirname($jsonFilePath);
+        $this->rules = $this->loadAndMergeRulesets($jsonFilePath);
     }
 
-    private function loadAndValidateJson(string $jsonFilePath): void
+    private function loadAndMergeRulesets(string $jsonFilePath): array
+    {
+        $ruleset = $this->loadAndValidateJson($jsonFilePath);
+
+        if (isset($ruleset['extends'])) {
+            $parentRulesetPath = $this->rulesetDir.'/'.$ruleset['extends'].'.json';
+            $parentRuleset = $this->loadAndMergeRulesets($parentRulesetPath);
+
+            return $this->mergeRulesets($parentRuleset, $ruleset);
+        }
+
+        return $ruleset;
+    }
+
+    private function loadAndValidateJson(string $jsonFilePath): array
     {
         if (! file_exists($jsonFilePath)) {
             throw new \RuntimeException("JSON file not found: $jsonFilePath");
         }
 
-        $json = json_decode(file_get_contents($jsonFilePath), true);
+        $jsonContent = file_get_contents($jsonFilePath);
+        $json = json_decode($jsonContent);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException('Invalid JSON: '.json_last_error_msg());
         }
 
         $validator = new Validator();
-        $validator->validate($json, (object) ['$ref' => 'file://'.realpath(__DIR__.'/ruleset-schema.json')]);
+        $schema = (object) ['$ref' => 'file://'.realpath(__DIR__.'/../../rulesets/schema.json')];
+        $validator->validate($json, $schema);
 
         if (! $validator->isValid()) {
             $errors = array_map(function ($error) {
@@ -37,17 +56,23 @@ class JsonRuleset
             throw new \RuntimeException("JSON does not validate against the schema:\n".implode("\n", $errors));
         }
 
-        $this->rules = $json;
+        return json_decode($jsonContent, true);
     }
 
-    private function loadAlwaysRuleset(): void
+    private function mergeRulesets(array $parent, array $child): array
     {
-        $alwaysPath = realpath(__DIR__.'/../../rulesets/always.json');
-        if (file_exists($alwaysPath)) {
-            $this->alwaysRules = json_decode(file_get_contents($alwaysPath), true);
-        } else {
-            $this->alwaysRules = ['exclude' => ['directories' => [], 'files' => []]];
+        $merged = array_merge($parent, $child);
+
+        foreach (['include', 'exclude'] as $section) {
+            if (isset($parent[$section]) && isset($child[$section])) {
+                $merged[$section] = [
+                    'directories' => array_merge($parent[$section]['directories'] ?? [], $child[$section]['directories'] ?? []),
+                    'files' => array_merge($parent[$section]['files'] ?? [], $child[$section]['files'] ?? []),
+                ];
+            }
         }
+
+        return $merged;
     }
 
     public function shouldIncludeDirectory(string $directory): bool
@@ -77,14 +102,13 @@ class JsonRuleset
     private function matchesPatterns(string $path, array $patterns): bool
     {
         foreach ($patterns as $pattern) {
-            if ($pattern['type'] === 'glob') {
-                if (Glob::match($path, $pattern['pattern'])) {
-                    return true;
-                }
-            } elseif ($pattern['type'] === 'regex') {
-                if (preg_match('/'.str_replace('/', '\/', $pattern['pattern']).'/', $path)) {
-                    return true;
-                }
+            $regex = match ($pattern['type']) {
+                'glob' => Glob::toRegex($pattern['pattern']),
+                'regex' => '/'.str_replace('/', '\/', $pattern['pattern']).'/',
+            };
+
+            if (! empty($regex) && preg_match($regex, $path)) {
+                return true;
             }
         }
 

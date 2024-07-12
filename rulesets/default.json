@@ -1,6 +1,7 @@
 {
     "name": "Default",
     "description": "Default ruleset for general project structures",
+    "extends": "always",
     "include": {
         "directories": [
             {

@@ -10,6 +10,10 @@
             "type": "string",
             "description": "Description of the ruleset"
         },
+        "extends": {
+            "type": "string",
+            "description": "Name of the ruleset to extend"
+        },
         "include": {
             "type": "object",
             "properties": {
@@ -86,5 +90,6 @@
             "description": "Maximum depth to traverse"
         }
     },
-    "required": ["name", "include"]
+    "required": ["name"],
+    "additionalProperties": false
 }
