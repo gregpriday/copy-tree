@@ -1,0 +1,58 @@
+{
+    "name": "Always",
+    "description": "Ruleset applied to all projects, regardless of other rulesets",
+    "exclude": {
+        "directories": [
+            {
+                "pattern": "^\\.git$",
+                "type": "regex"
+            },
+            {
+                "pattern": "^\\.svn$",
+                "type": "regex"
+            },
+            {
+                "pattern": "^\\.hg$",
+                "type": "regex"
+            },
+            {
+                "pattern": "^\\.idea$",
+                "type": "regex"
+            },
+            {
+                "pattern": "^\\.vscode$",
+                "type": "regex"
+            }
+        ],
+        "files": [
+            {
+                "pattern": ".DS_Store",
+                "type": "glob"
+            },
+            {
+                "pattern": "Thumbs.db",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.swp",
+                "type": "glob"
+            },
+            {
+                "pattern": "*~",
+                "type": "glob"
+            },
+            {
+                "pattern": ".gitignore",
+                "type": "glob"
+            },
+            {
+                "pattern": ".gitattributes",
+                "type": "glob"
+            },
+            {
+                "pattern": ".editorconfig",
+                "type": "glob"
+            }
+        ]
+    }
+}

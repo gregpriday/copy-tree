@@ -40,8 +40,21 @@ class JsonRuleset
         $this->rules = $json;
     }
 
+    private function loadAlwaysRuleset(): void
+    {
+        $alwaysPath = realpath(__DIR__ . '/../../rulesets/always.json');
+        if (file_exists($alwaysPath)) {
+            $this->alwaysRules = json_decode(file_get_contents($alwaysPath), true);
+        } else {
+            $this->alwaysRules = ['exclude' => ['directories' => [], 'files' => []]];
+        }
+    }
+
     public function shouldIncludeDirectory(string $directory): bool
     {
+        if ($this->matchesPatterns($directory, $this->alwaysRules['exclude']['directories'] ?? [])) {
+            return false;
+        }
         if ($this->matchesPatterns($directory, $this->rules['exclude']['directories'] ?? [])) {
             return false;
         }
@@ -50,6 +63,9 @@ class JsonRuleset
 
     public function shouldIncludeFile(string $file): bool
     {
+        if ($this->matchesPatterns($file, $this->alwaysRules['exclude']['files'] ?? [])) {
+            return false;
+        }
         if ($this->matchesPatterns($file, $this->rules['exclude']['files'] ?? [])) {
             return false;
         }
