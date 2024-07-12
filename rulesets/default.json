@@ -1,0 +1,121 @@
+{
+    "name": "Default",
+    "description": "Default ruleset for general project structures",
+    "include": {
+        "directories": [
+            {
+                "pattern": "**",
+                "type": "glob"
+            }
+        ],
+        "files": [
+            {
+                "pattern": "*",
+                "type": "glob"
+            }
+        ]
+    },
+    "exclude": {
+        "directories": [
+            {
+                "pattern": "vendor",
+                "type": "glob"
+            },
+            {
+                "pattern": "node_modules",
+                "type": "glob"
+            },
+            {
+                "pattern": "^\\..*",
+                "type": "regex"
+            },
+            {
+                "pattern": "build",
+                "type": "glob"
+            },
+            {
+                "pattern": "dist",
+                "type": "glob"
+            },
+            {
+                "pattern": "out",
+                "type": "glob"
+            },
+            {
+                "pattern": "target",
+                "type": "glob"
+            },
+            {
+                "pattern": "bin",
+                "type": "glob"
+            },
+            {
+                "pattern": "obj",
+                "type": "glob"
+            },
+            {
+                "pattern": "logs",
+                "type": "glob"
+            },
+            {
+                "pattern": "temp",
+                "type": "glob"
+            },
+            {
+                "pattern": "tmp",
+                "type": "glob"
+            },
+            {
+                "pattern": "cache",
+                "type": "glob"
+            }
+        ],
+        "files": [
+            {
+                "pattern": "*.log",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.lock",
+                "type": "glob"
+            },
+            {
+                "pattern": ".*",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.tmp",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.temp",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.swp",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.swo",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.bak",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.cache",
+                "type": "glob"
+            },
+            {
+                "pattern": "Thumbs.db",
+                "type": "glob"
+            },
+            {
+                "pattern": ".DS_Store",
+                "type": "glob"
+            }
+        ]
+    },
+    "maxDepth": 10
+}
