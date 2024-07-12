@@ -52,6 +52,7 @@ class CopyTreeCommand extends Command
             $ruleset = $this->getRuleset($path, $rulesetOption, $io);
         } catch (Exception $e) {
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
 
@@ -68,6 +69,7 @@ class CopyTreeCommand extends Command
                 $io->success(sprintf('%d file contents have been saved to %s.', $fileCount, $outputFile));
             } catch (Exception $e) {
                 $io->error(sprintf('Failed to save output to file: %s', $e->getMessage()));
+
                 return Command::FAILURE;
             }
         } elseif (! $noClipboard) {
@@ -86,9 +88,10 @@ class CopyTreeCommand extends Command
     private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): JsonRuleset
     {
         // Check for custom ruleset in the project directory
-        $customRulesetPath = $path . '/ctree.json';
+        $customRulesetPath = $path.'/ctree.json';
         if (file_exists($customRulesetPath)) {
             $io->note('Using custom ruleset from ctree.json');
+
             return new JsonRuleset($customRulesetPath);
         }
 
@@ -113,6 +116,7 @@ class CopyTreeCommand extends Command
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         if (file_exists($defaultRulesetPath)) {
             $io->note('Using default ruleset');
+
             return new JsonRuleset($defaultRulesetPath);
         }
 
@@ -122,13 +126,14 @@ class CopyTreeCommand extends Command
 
     private function getDefaultRulesetPath(): string
     {
-        return realpath(__DIR__ . '/../../rulesets/default.json');
+        return realpath(__DIR__.'/../../rulesets/default.json');
     }
 
     private function getAvailableRulesets(): array
     {
-        $rulesetDir = realpath(__DIR__ . '/../../rulesets');
-        return array_map('basename', glob($rulesetDir . '/*.json'));
+        $rulesetDir = realpath(__DIR__.'/../../rulesets');
+
+        return array_map('basename', glob($rulesetDir.'/*.json'));
     }
 
     private function displayTree($directory, $fileFilter, $depth, JsonRuleset $ruleset, $prefix = '', $baseDir = ''): array
@@ -150,21 +155,21 @@ class CopyTreeCommand extends Command
             }
 
             $path = $fileInfo->getPathname();
-            $relativePath = $baseDir ? $baseDir . '/' . $filename : $filename;
+            $relativePath = $baseDir ? $baseDir.'/'.$filename : $filename;
 
             if ($fileInfo->isDir()) {
-                if (!$ruleset->shouldIncludeDirectory($relativePath)) {
+                if (! $ruleset->shouldIncludeDirectory($relativePath)) {
                     continue;
                 }
-                $treeOutput[] = $prefix . $filename;
-                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $ruleset, $prefix . '│   ', $relativePath);
+                $treeOutput[] = $prefix.$filename;
+                [$subTreeOutput, $subFileContentsOutput] = $this->displayTree($path, $fileFilter, $depth - 1, $ruleset, $prefix.'│   ', $relativePath);
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
                 if (fnmatch($fileFilter, $filename) && $ruleset->shouldIncludeFile($relativePath)) {
-                    $treeOutput[] = $prefix . $filename;
+                    $treeOutput[] = $prefix.$filename;
                     $fileContentsOutput[] = '';
-                    $fileContentsOutput[] = '> ' . $relativePath;
+                    $fileContentsOutput[] = '> '.$relativePath;
                     $fileContentsOutput[] = '```';
                     try {
                         $content = file_get_contents($path);

@@ -5,6 +5,7 @@ namespace GregPriday\CopyTree\Ruleset;
 class RulesetGuesser
 {
     private string $projectPath;
+
     private array $availableRulesets;
 
     public function __construct(string $projectPath, array $availableRulesets)
@@ -30,20 +31,20 @@ class RulesetGuesser
 
     private function isLaravelProject(): bool
     {
-        return file_exists($this->projectPath . '/artisan') &&
-            is_dir($this->projectPath . '/app') &&
-            is_dir($this->projectPath . '/bootstrap') &&
-            is_dir($this->projectPath . '/config') &&
-            is_dir($this->projectPath . '/database');
+        return file_exists($this->projectPath.'/artisan') &&
+            is_dir($this->projectPath.'/app') &&
+            is_dir($this->projectPath.'/bootstrap') &&
+            is_dir($this->projectPath.'/config') &&
+            is_dir($this->projectPath.'/database');
     }
 
     private function isSvelteKitProject(): bool
     {
-        if (!file_exists($this->projectPath . '/package.json')) {
+        if (! file_exists($this->projectPath.'/package.json')) {
             return false;
         }
 
-        $packageJson = json_decode(file_get_contents($this->projectPath . '/package.json'), true);
+        $packageJson = json_decode(file_get_contents($this->projectPath.'/package.json'), true);
 
         return isset($packageJson['dependencies']['@sveltejs/kit']) ||
             isset($packageJson['devDependencies']['@sveltejs/kit']);
@@ -51,10 +52,11 @@ class RulesetGuesser
 
     public function getRulesetPath(string $rulesetName): ?string
     {
-        $rulesetFileName = $rulesetName . '.json';
+        $rulesetFileName = $rulesetName.'.json';
         if (in_array($rulesetFileName, $this->availableRulesets)) {
-            return realpath(__DIR__ . '/../../rulesets/' . $rulesetFileName);
+            return realpath(__DIR__.'/../../rulesets/'.$rulesetFileName);
         }
+
         return null;
     }
 }

@@ -16,25 +16,25 @@ class JsonRuleset
 
     private function loadAndValidateJson(string $jsonFilePath): void
     {
-        if (!file_exists($jsonFilePath)) {
+        if (! file_exists($jsonFilePath)) {
             throw new \RuntimeException("JSON file not found: $jsonFilePath");
         }
 
         $json = json_decode(file_get_contents($jsonFilePath), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException("Invalid JSON: " . json_last_error_msg());
+            throw new \RuntimeException('Invalid JSON: '.json_last_error_msg());
         }
 
         $validator = new Validator();
-        $validator->validate($json, (object)['$ref' => 'file://' . realpath(__DIR__ . '/ruleset-schema.json')]);
+        $validator->validate($json, (object) ['$ref' => 'file://'.realpath(__DIR__.'/ruleset-schema.json')]);
 
-        if (!$validator->isValid()) {
-            $errors = array_map(function($error) {
-                return sprintf("[%s] %s", $error['property'], $error['message']);
+        if (! $validator->isValid()) {
+            $errors = array_map(function ($error) {
+                return sprintf('[%s] %s', $error['property'], $error['message']);
             }, $validator->getErrors());
 
-            throw new \RuntimeException("JSON does not validate against the schema:\n" . implode("\n", $errors));
+            throw new \RuntimeException("JSON does not validate against the schema:\n".implode("\n", $errors));
         }
 
         $this->rules = $json;
@@ -42,7 +42,7 @@ class JsonRuleset
 
     private function loadAlwaysRuleset(): void
     {
-        $alwaysPath = realpath(__DIR__ . '/../../rulesets/always.json');
+        $alwaysPath = realpath(__DIR__.'/../../rulesets/always.json');
         if (file_exists($alwaysPath)) {
             $this->alwaysRules = json_decode(file_get_contents($alwaysPath), true);
         } else {
@@ -58,6 +58,7 @@ class JsonRuleset
         if ($this->matchesPatterns($directory, $this->rules['exclude']['directories'] ?? [])) {
             return false;
         }
+
         return $this->matchesPatterns($directory, $this->rules['include']['directories'] ?? []);
     }
 
@@ -69,6 +70,7 @@ class JsonRuleset
         if ($this->matchesPatterns($file, $this->rules['exclude']['files'] ?? [])) {
             return false;
         }
+
         return $this->matchesPatterns($file, $this->rules['include']['files'] ?? []);
     }
 
@@ -80,11 +82,12 @@ class JsonRuleset
                     return true;
                 }
             } elseif ($pattern['type'] === 'regex') {
-                if (preg_match('/' . str_replace('/', '\/', $pattern['pattern']) . '/', $path)) {
+                if (preg_match('/'.str_replace('/', '\/', $pattern['pattern']).'/', $path)) {
                     return true;
                 }
             }
         }
+
         return false;
     }
 
@@ -105,6 +108,6 @@ class JsonRuleset
 
     public static function createDefaultRuleset(): self
     {
-        return new self(__DIR__ . '/default-ruleset.json');
+        return new self(__DIR__.'/default-ruleset.json');
     }
 }
