@@ -1,0 +1,85 @@
+{
+    "name": "Laravel",
+    "description": "Default ruleset for Laravel projects",
+    "include": {
+        "directories": [
+            {
+                "pattern": "app/**",
+                "type": "glob"
+            },
+            {
+                "pattern": "config",
+                "type": "glob"
+            },
+            {
+                "pattern": "database/migrations",
+                "type": "glob"
+            },
+            {
+                "pattern": "resources/views",
+                "type": "glob"
+            },
+            {
+                "pattern": "routes",
+                "type": "glob"
+            },
+            {
+                "pattern": "tests",
+                "type": "glob"
+            }
+        ],
+        "files": [
+            {
+                "pattern": "*.php",
+                "type": "glob"
+            },
+            {
+                "pattern": "*.blade.php",
+                "type": "glob"
+            },
+            {
+                "pattern": "composer.json",
+                "type": "glob"
+            },
+            {
+                "pattern": ".env.example",
+                "type": "glob"
+            }
+        ]
+    },
+    "exclude": {
+        "directories": [
+            {
+                "pattern": "vendor",
+                "type": "glob"
+            },
+            {
+                "pattern": "node_modules",
+                "type": "glob"
+            },
+            {
+                "pattern": "storage",
+                "type": "glob"
+            }
+        ],
+        "files": [
+            {
+                "pattern": "*.log",
+                "type": "glob"
+            },
+            {
+                "pattern": "composer.lock",
+                "type": "glob"
+            },
+            {
+                "pattern": "package-lock.json",
+                "type": "glob"
+            },
+            {
+                "pattern": ".env",
+                "type": "glob"
+            }
+        ]
+    },
+    "maxDepth": 10
+}

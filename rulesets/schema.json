@@ -1,0 +1,90 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name of the ruleset"
+        },
+        "description": {
+            "type": "string",
+            "description": "Description of the ruleset"
+        },
+        "include": {
+            "type": "object",
+            "properties": {
+                "directories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": { "type": "string" },
+                            "type": {
+                                "type": "string",
+                                "enum": ["glob", "regex"]
+                            }
+                        },
+                        "required": ["pattern", "type"]
+                    },
+                    "description": "List of directory patterns to include"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": { "type": "string" },
+                            "type": {
+                                "type": "string",
+                                "enum": ["glob", "regex"]
+                            }
+                        },
+                        "required": ["pattern", "type"]
+                    },
+                    "description": "List of file patterns to include"
+                }
+            }
+        },
+        "exclude": {
+            "type": "object",
+            "properties": {
+                "directories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": { "type": "string" },
+                            "type": {
+                                "type": "string",
+                                "enum": ["glob", "regex"]
+                            }
+                        },
+                        "required": ["pattern", "type"]
+                    },
+                    "description": "List of directory patterns to exclude"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": { "type": "string" },
+                            "type": {
+                                "type": "string",
+                                "enum": ["glob", "regex"]
+                            }
+                        },
+                        "required": ["pattern", "type"]
+                    },
+                    "description": "List of file patterns to exclude"
+                }
+            }
+        },
+        "maxDepth": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Maximum depth to traverse"
+        }
+    },
+    "required": ["name", "include"]
+}

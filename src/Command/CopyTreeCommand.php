@@ -4,7 +4,8 @@ namespace GregPriday\CopyTree\Command;
 
 use Exception;
 use GregPriday\CopyTree\Clipboard;
-use GregPriday\CopyTree\Ruleset\RulesetInterface;
+use GregPriday\CopyTree\Ruleset\JsonRuleset;
+use GregPriday\CopyTree\Ruleset\RulesetGuesser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,7 +29,7 @@ class CopyTreeCommand extends Command
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
             ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
-            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, 'Ruleset to apply (laravel, sveltekit)', 'default');
+            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, 'Ruleset to apply (laravel, sveltekit)', 'auto');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,13 +41,20 @@ class CopyTreeCommand extends Command
         $noClipboard = $input->getOption('no-clipboard');
         $displayOutput = $input->getOption('display');
         $outputFile = $input->getOption('output');
+        $rulesetOption = $input->getOption('ruleset');
 
         // If output is specified as a flag but no value is given, set the default filename
         if ($input->hasParameterOption(['--output', '-o']) && is_null($outputFile)) {
             $outputFile = $this->generateDefaultOutputFilename($path);
         }
 
-        $ruleset = $this->getRulesetInstance($input->getOption('ruleset'));
+        try {
+            $ruleset = $this->getRuleset($path, $rulesetOption, $io);
+        } catch (Exception $e) {
+            $io->error($e->getMessage());
+            return Command::FAILURE;
+        }
+
         [$treeOutput, $fileContentsOutput] = $this->displayTree($path, $filter, $depth, $ruleset);
 
         $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
@@ -60,7 +68,6 @@ class CopyTreeCommand extends Command
                 $io->success(sprintf('%d file contents have been saved to %s.', $fileCount, $outputFile));
             } catch (Exception $e) {
                 $io->error(sprintf('Failed to save output to file: %s', $e->getMessage()));
-
                 return Command::FAILURE;
             }
         } elseif (! $noClipboard) {
@@ -76,43 +83,43 @@ class CopyTreeCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function getRulesetInstance(string $ruleset): ?RulesetInterface
+    private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): JsonRuleset
     {
-        $rulesetClassName = $this->findRulesetClass($ruleset);
-        if ($rulesetClassName) {
-            return new $rulesetClassName();
+        $customRulesetPath = $path . '/ctree.json';
+        if (file_exists($customRulesetPath)) {
+            $io->note('Using custom ruleset from ctree.json');
+            return new JsonRuleset($customRulesetPath);
         }
 
-        return null;
-    }
+        $availableRulesets = $this->getAvailableRulesets();
+        $guesser = new RulesetGuesser($path, $availableRulesets);
 
-    private function findRulesetClass(string $ruleset): ?string
-    {
-        $rulesetPath = __DIR__ . '/../Ruleset';
-        $rulesetFiles = scandir($rulesetPath);
-
-        $rulesetClassName = null;
-        $rulesetPattern = strtolower($ruleset) . 'ruleset';
-
-        foreach ($rulesetFiles as $file) {
-            if (preg_match('/^[^.].*\.php$/', $file)) {
-                $className = basename($file, '.php');
-                if (strtolower($className) === $rulesetPattern) {
-                    $rulesetClassName = 'GregPriday\\CopyTree\\Ruleset\\' . $className;
-                    break;
-                }
-            }
+        if ($rulesetOption === 'auto') {
+            $rulesetOption = $guesser->guess();
+            $io->note(sprintf('Auto-detected ruleset: %s', $rulesetOption));
         }
 
-        return $rulesetClassName;
+        $rulesetPath = $guesser->getRulesetPath($rulesetOption);
+        if ($rulesetPath) {
+            return new JsonRuleset($rulesetPath);
+        }
+
+        $io->warning(sprintf('Ruleset "%s" not found. Using default ruleset.', $rulesetOption));
+        return JsonRuleset::createDefaultRuleset();
     }
 
-    private function displayTree($directory, $fileFilter, $depth, ?RulesetInterface $ruleset, $prefix = '', $baseDir = ''): array
+    private function getAvailableRulesets(): array
+    {
+        $rulesetDir = realpath(__DIR__ . '/../../rulesets');
+        return array_map('basename', glob($rulesetDir . '/*.json'));
+    }
+
+    private function displayTree($directory, $fileFilter, $depth, JsonRuleset $ruleset, $prefix = '', $baseDir = ''): array
     {
         $treeOutput = [];
         $fileContentsOutput = [];
 
-        if ($depth == 0) {
+        if ($depth == 0 || $depth > $ruleset->getMaxDepth()) {
             return [$treeOutput, $fileContentsOutput];
         }
 
@@ -129,7 +136,7 @@ class CopyTreeCommand extends Command
             $relativePath = $baseDir ? $baseDir . '/' . $filename : $filename;
 
             if ($fileInfo->isDir()) {
-                if ($ruleset && !$ruleset->shouldIncludeDirectory($relativePath)) {
+                if (!$ruleset->shouldIncludeDirectory($relativePath)) {
                     continue;
                 }
                 $treeOutput[] = $prefix . $filename;
@@ -137,7 +144,7 @@ class CopyTreeCommand extends Command
                 $treeOutput = array_merge($treeOutput, $subTreeOutput);
                 $fileContentsOutput = array_merge($fileContentsOutput, $subFileContentsOutput);
             } else {
-                if (fnmatch($fileFilter, $filename) && (!$ruleset || $ruleset->shouldIncludeFile($relativePath))) {
+                if (fnmatch($fileFilter, $filename) && $ruleset->shouldIncludeFile($relativePath)) {
                     $treeOutput[] = $prefix . $filename;
                     $fileContentsOutput[] = '';
                     $fileContentsOutput[] = '> ' . $relativePath;
@@ -157,12 +164,6 @@ class CopyTreeCommand extends Command
         return [$treeOutput, $fileContentsOutput];
     }
 
-    /**
-     * Generate a default output filename based on the directory name and current date-time.
-     *
-     * @param string $path The directory path.
-     * @return string The generated output filename.
-     */
     private function generateDefaultOutputFilename($path): string
     {
         $directoryName = basename($path);
