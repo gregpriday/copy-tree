@@ -39,6 +39,10 @@ class CopyTreeCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+
+        // Set verbosity based on the input
+        $io->setVerbosity($output->getVerbosity());
+
         $path = $input->getArgument('path');
         $filter = $input->getOption('filter');
         $depth = $input->getOption('depth');
@@ -53,6 +57,7 @@ class CopyTreeCommand extends Command
 
         try {
             $ruleset = $this->getRuleset($path, $rulesetOption, $io);
+
             $allFiles = $this->getAllFiles($path, $depth);
             $filteredFiles = $this->filterFiles($allFiles, $ruleset, $filter);
             [$treeOutput, $fileContentsOutput] = $this->generateTree($filteredFiles, $path);
@@ -60,7 +65,11 @@ class CopyTreeCommand extends Command
             $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
             $formattedOutput = implode("\n", $combinedOutput);
 
-            $this->handleOutput($formattedOutput, $noClipboard, $outputFile, $displayOutput, $io);
+            $this->handleOutput($formattedOutput, $filteredFiles, $noClipboard, $outputFile, $displayOutput, $io);
+
+            $io->writeln(sprintf('Found %d files', count($allFiles)), OutputInterface::VERBOSITY_VERBOSE);
+            $io->writeln(sprintf('Filtered down to %d files based on ruleset and filter', count($filteredFiles)), OutputInterface::VERBOSITY_VERBOSE);
+            $io->writeln(sprintf('Used maximum depth of %d', $depth), OutputInterface::VERBOSITY_VERBOSE);
 
             return Command::SUCCESS;
         } catch (Exception $e) {
@@ -75,7 +84,7 @@ class CopyTreeCommand extends Command
         // Check for custom ruleset in the current directory
         $customRulesetPath = $this->findCustomRuleset($path, $rulesetOption);
         if ($customRulesetPath) {
-            $io->note(sprintf('Using custom ruleset: %s', $customRulesetPath));
+            $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
 
             return new IncludeRuleset($customRulesetPath);
         }
@@ -83,7 +92,7 @@ class CopyTreeCommand extends Command
         // If no custom ruleset found, check for predefined rulesets
         $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
         if ($predefinedRulesetPath) {
-            $io->note(sprintf('Using predefined ruleset: %s', $rulesetOption));
+            $io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), OutputInterface::VERBOSITY_VERBOSE);
 
             return new IncludeRuleset($predefinedRulesetPath);
         }
@@ -95,7 +104,7 @@ class CopyTreeCommand extends Command
         if ($rulesetOption === 'auto') {
             $rulesetOption = $guesser->guess();
             if ($rulesetOption !== 'default') {
-                $io->note(sprintf('Auto-detected ruleset: %s', $rulesetOption));
+                $io->writeln(sprintf('Auto-detected ruleset: %s', $rulesetOption), OutputInterface::VERBOSITY_VERBOSE);
 
                 return new IncludeRuleset($this->getPredefinedRulesetPath($rulesetOption));
             }
@@ -103,7 +112,7 @@ class CopyTreeCommand extends Command
 
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         if (file_exists($defaultRulesetPath)) {
-            $io->note('Using default ruleset');
+            $io->writeln('Using default ruleset', OutputInterface::VERBOSITY_VERBOSE);
 
             return new IncludeRuleset($defaultRulesetPath);
         }
@@ -203,22 +212,27 @@ class CopyTreeCommand extends Command
         }
     }
 
-    private function handleOutput(string $output, bool $noClipboard, ?string $outputFile, bool $displayOutput, SymfonyStyle $io): void
+    private function handleOutput(string $output, array $filteredFiles, bool $noClipboard, ?string $outputFile, bool $displayOutput, SymfonyStyle $io): void
     {
-        $fileCount = substr_count($output, '> ');
+        $fileCount = count($filteredFiles);
 
         if ($outputFile) {
             file_put_contents($outputFile, $output);
-            $io->success(sprintf('%d file contents have been saved to %s.', $fileCount, $outputFile));
+            $io->writeln(sprintf('<info>✓ Saved %d files to %s</info>', $fileCount, $outputFile));
+            $io->writeln(sprintf('Output file size: %s bytes', filesize($outputFile)), OutputInterface::VERBOSITY_VERBOSE);
         } elseif (! $noClipboard) {
             $clip = new Clipboard();
             $clip->copy($output);
-            $io->success(sprintf('%d file contents have been copied to the clipboard.', $fileCount));
+            $io->writeln(sprintf('<info>✓ Copied %d files to clipboard</info>', $fileCount));
+            $io->writeln(sprintf('Clipboard content size: %d characters', strlen($output)), OutputInterface::VERBOSITY_VERBOSE);
         }
 
         if ($displayOutput) {
+            $io->writeln('Displaying output in console:', OutputInterface::VERBOSITY_VERBOSE);
             $io->text($output);
         }
+
+        $io->writeln(sprintf('Total output size: %d characters', strlen($output)), OutputInterface::VERBOSITY_VERBOSE);
     }
 
     private function getDefaultRulesetPath(): string

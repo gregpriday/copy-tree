@@ -16,8 +16,11 @@ class IncludeRuleset
 
     private array $forceExcludeRules = [];
 
+    private string $rulesetFile;
+
     public function __construct(string $rulesetPath)
     {
+        $this->rulesetFile = $rulesetPath;
         $this->loadRules($rulesetPath);
     }
 
@@ -134,5 +137,10 @@ class IncludeRuleset
         $regex = str_replace('/*', '/[^/]*', $regex);
 
         return '/^'.$regex.'$/';
+    }
+
+    public function getRulesetFile(): string
+    {
+        return $this->rulesetFile;
     }
 }
