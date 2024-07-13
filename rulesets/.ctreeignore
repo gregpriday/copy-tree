@@ -1,0 +1,29 @@
+# Directories to ignore
+vendor/
+node_modules/
+build/
+dist/
+out/
+target/
+bin/
+obj/
+logs/
+temp/
+tmp/
+cache/
+
+# Hidden directories (regex: ^\..*)
+.*/
+
+# Files to ignore (in any directory)
+**/*.log
+**/*.lock
+**/.*
+**/*.tmp
+**/*.temp
+**/*.swp
+**/*.swo
+**/*.bak
+**/*.cache
+**/Thumbs.db
+**/.DS_Store

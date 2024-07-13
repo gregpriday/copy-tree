@@ -74,4 +74,15 @@ class CopyTreeCommandTest extends TestCase
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
     }
+
+    public function testCopyBaseFolder()
+    {
+        // Set the current working directory to ../
+        chdir(__DIR__.'/..');
+
+        // Now run the command
+        $this->commandTester->execute([
+            'path' => '.',
+        ]);
+    }
 }
