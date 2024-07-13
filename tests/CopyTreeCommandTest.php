@@ -52,4 +52,37 @@ class CopyTreeCommandTest extends TestCase
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('>', $output); // Check for part of the output format
     }
+
+    public function testCopySveltekitFolder()
+    {
+        $this->commandTester->execute([
+            'path' => '/Users/gpriday/Sites/vectorlens-sveltekit',
+            '--ruleset' => 'sveltekit',
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
+    }
+
+    public function testCopyLaravelFolder()
+    {
+        $this->commandTester->execute([
+            'path' => '/Users/gpriday/Sites/vectorlens',
+            '--ruleset' => 'laravel',
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
+    }
+
+    public function testCopyBaseFolder()
+    {
+        // Set the current working directory to ../
+        chdir(__DIR__.'/..');
+
+        // Now run the command
+        $this->commandTester->execute([
+            'path' => '.',
+        ]);
+    }
 }
