@@ -6,6 +6,84 @@
 
 This command line tool allows you to copy the entire structure of a directory, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews or collaborative debugging sessions.
 
+## Prerequisites
+
+Before installing and using `copy-tree`, make sure to have the necessary clipboard utilities installed on your system:
+
+- **Linux**: Install `xclip` or `xsel` which is used by the tool to access the clipboard.
+  ```bash
+  sudo apt-get update && sudo apt-get install -y xclip
+  # or for xsel
+  sudo apt-get install -y xsel
+  ```
+- **macOS**: macOS comes with `pbcopy` and `pbpaste` preinstalled, so no additional installation is necessary.
+- **Windows**: Windows has the `clip` command available by default, so no additional installation is required.
+
+## Installation
+
+You can install the package via Composer:
+
+```bash
+composer require gregpriday/copy-tree
+```
+
+## Usage
+
+After installation, you can run the `copy-tree` command directly from your terminal. Here's how you can use the command:
+
+```bash
+# Display the help information
+./vendor/bin/ctree --help
+
+# Copy current directory to clipboard and optionally display the output
+./vendor/bin/ctree --display
+
+# Specify a directory path
+./vendor/bin/ctree --path=/path/to/directory
+
+# Avoid copying to clipboard
+./vendor/bin/ctree --no-clipboard
+
+# Specify depth of directory tree
+./vendor/bin/ctree --depth=3
+```
+
+### Global Installation and Usage
+
+Install `copy-tree` globally with Composer to use the `ctree` command from anywhere in your terminal:
+
+```bash
+composer global require gregpriday/copy-tree
+```
+
+Run the same command to upgrade to the latest version.
+
+Ensure the Composer global bin directory is in your `PATH`. Typically, this is `~/.composer/vendor/bin` or `~/.config/composer/vendor/bin` for Unix systems. Add this to your `.bashrc` or `.zshrc`:
+
+```bash
+export PATH="$PATH:$HOME/.composer/vendor/bin"
+```
+
+Reload your configuration:
+
+```bash
+source ~/.bashrc
+# Or, if using zsh
+source ~/.zshrc
+```
+
+Now, you can use `ctree` from any directory:
+
+```bash
+# Copy the current directory to the clipboard
+ctree
+
+# Copy with specific depth and display output
+ctree --path=/path/to/directory --depth=2 --display
+```
+
+This setup streamlines the installation and usage process, allowing quick and flexible use of `ctree` across your system.
+
 ## Ruleset Usage
 
 Copy-tree supports multiple rulesets to determine which files and directories to include or exclude. The ruleset system works in the following order:
