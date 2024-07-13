@@ -9,9 +9,12 @@ tests/**
 ~**/*.js
 ~**/*.ts
 ~**/*.svelte
-~**/package.json
-~**/svelte.config.js
-~**/vite.config.js
+
+# Extra config files that add useful information.
++package.json
++README.md
++tailwind.config.js
++svelte.config.js
 
 # Exclude rules
 !node_modules/

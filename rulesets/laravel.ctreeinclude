@@ -11,8 +11,10 @@ tests/**
 # Secondary include rules (file types)
 ~**/*.php
 ~**/*.blade.php
-~**/composer.json
-~**/.env.example
+
++composer.json
++README.md
++.env.example
 
 # Exclude rules
 !vendor/
