@@ -2,20 +2,6 @@
     "name": "Default",
     "description": "Default ruleset for general project structures",
     "extends": "always",
-    "include": {
-        "directories": [
-            {
-                "pattern": "**",
-                "type": "glob"
-            }
-        ],
-        "files": [
-            {
-                "pattern": "*",
-                "type": "glob"
-            }
-        ]
-    },
     "exclude": {
         "directories": [
             {

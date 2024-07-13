@@ -9,11 +9,19 @@ class JsonRuleset
 {
     private array $rules;
 
-    private string $rulesetDir;
+    private array $rulesetPaths;
 
-    public function __construct(string $jsonFilePath)
+    public function __construct(string $jsonFilePath, ?string $projectRoot = null)
     {
-        $this->rulesetDir = dirname($jsonFilePath);
+        $this->rulesetPaths = [
+            dirname($jsonFilePath).'/.ctree',
+            __DIR__.'/../../rulesets',
+        ];
+
+        if ($projectRoot) {
+            array_unshift($this->rulesetPaths, $projectRoot.'/.ctree');
+        }
+
         $this->rules = $this->loadAndMergeRulesets($jsonFilePath);
     }
 
@@ -22,13 +30,29 @@ class JsonRuleset
         $ruleset = $this->loadAndValidateJson($jsonFilePath);
 
         if (isset($ruleset['extends'])) {
-            $parentRulesetPath = $this->rulesetDir.'/'.$ruleset['extends'].'.json';
-            $parentRuleset = $this->loadAndMergeRulesets($parentRulesetPath);
+            $parentRulesetPath = $this->findRulesetFile($ruleset['extends']);
+            if ($parentRulesetPath) {
+                $parentRuleset = $this->loadAndMergeRulesets($parentRulesetPath);
 
-            return $this->mergeRulesets($parentRuleset, $ruleset);
+                return $this->mergeRulesets($parentRuleset, $ruleset);
+            } else {
+                throw new \RuntimeException("Extended ruleset not found: {$ruleset['extends']}");
+            }
         }
 
         return $ruleset;
+    }
+
+    private function findRulesetFile(string $rulesetName): ?string
+    {
+        foreach ($this->rulesetPaths as $path) {
+            $fullPath = $path.'/'.$rulesetName.'.json';
+            if (file_exists($fullPath)) {
+                return $fullPath;
+            }
+        }
+
+        return null;
     }
 
     private function loadAndValidateJson(string $jsonFilePath): array
@@ -77,26 +101,34 @@ class JsonRuleset
 
     public function shouldIncludeDirectory(string $directory): bool
     {
-        if ($this->matchesPatterns($directory, $this->alwaysRules['exclude']['directories'] ?? [])) {
-            return false;
-        }
+        // First, check if the directory matches any exclude patterns
         if ($this->matchesPatterns($directory, $this->rules['exclude']['directories'] ?? [])) {
             return false;
         }
 
-        return $this->matchesPatterns($directory, $this->rules['include']['directories'] ?? []);
+        // If there are no include rules for directories, include everything
+        if (empty($this->rules['include']['directories'] ?? [])) {
+            return true;
+        }
+
+        // Otherwise, check if the directory matches any include patterns
+        return $this->matchesPatterns($directory, $this->rules['include']['directories']);
     }
 
     public function shouldIncludeFile(string $file): bool
     {
-        if ($this->matchesPatterns($file, $this->alwaysRules['exclude']['files'] ?? [])) {
-            return false;
-        }
+        // First, check if the file matches any exclude patterns
         if ($this->matchesPatterns($file, $this->rules['exclude']['files'] ?? [])) {
             return false;
         }
 
-        return $this->matchesPatterns($file, $this->rules['include']['files'] ?? []);
+        // If there are no include rules for files, include everything
+        if (empty($this->rules['include']['files'] ?? [])) {
+            return true;
+        }
+
+        // Otherwise, check if the file matches any include patterns
+        return $this->matchesPatterns($file, $this->rules['include']['files']);
     }
 
     private function matchesPatterns(string $path, array $patterns): bool
@@ -132,6 +164,6 @@ class JsonRuleset
 
     public static function createDefaultRuleset(): self
     {
-        return new self(__DIR__.'/default-ruleset.json');
+        return new self(__DIR__.'/../../rulesets/default.json');
     }
 }

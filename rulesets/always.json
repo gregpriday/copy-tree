@@ -38,10 +38,6 @@
                 "type": "glob"
             },
             {
-                "pattern": "*~",
-                "type": "glob"
-            },
-            {
                 "pattern": ".gitignore",
                 "type": "glob"
             },

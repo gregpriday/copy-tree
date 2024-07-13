@@ -88,11 +88,17 @@ class CopyTreeCommand extends Command
     private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): JsonRuleset
     {
         // Check for custom ruleset in the project directory
-        $customRulesetPath = $path.'/ctree.json';
-        if (file_exists($customRulesetPath)) {
-            $io->note('Using custom ruleset from ctree.json');
+        $customRulesetPaths = [
+            $path.'/ctree.json',
+            $path.'/.ctree/ruleset.json',
+        ];
 
-            return new JsonRuleset($customRulesetPath);
+        foreach ($customRulesetPaths as $customRulesetPath) {
+            if (file_exists($customRulesetPath)) {
+                $io->note('Using custom ruleset from '.basename(dirname($customRulesetPath)).'/'.basename($customRulesetPath));
+
+                return new JsonRuleset($customRulesetPath, $path);
+            }
         }
 
         $availableRulesets = $this->getAvailableRulesets();
@@ -109,7 +115,7 @@ class CopyTreeCommand extends Command
         // Try to get the specified or guessed ruleset
         $rulesetPath = $guesser->getRulesetPath($rulesetOption);
         if ($rulesetPath) {
-            return new JsonRuleset($rulesetPath);
+            return new JsonRuleset($rulesetPath, $path);
         }
 
         // If no suitable ruleset found, fall back to the default ruleset
@@ -117,7 +123,7 @@ class CopyTreeCommand extends Command
         if (file_exists($defaultRulesetPath)) {
             $io->note('Using default ruleset');
 
-            return new JsonRuleset($defaultRulesetPath);
+            return new JsonRuleset($defaultRulesetPath, $path);
         }
 
         // If even the default ruleset is not found, throw an exception
