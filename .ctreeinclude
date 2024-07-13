@@ -1,0 +1,6 @@
+src/**
+rulesets/**
+
+# These files have useful extra information about the project
++composer.json
++README.md

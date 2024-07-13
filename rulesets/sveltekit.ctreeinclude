@@ -1,0 +1,24 @@
+# SvelteKit .ctreeinclude
+
+# Primary include rules (directories)
+src/**
+static/**
+tests/**
+
+# Secondary include rules (file types)
+~**/*.js
+~**/*.ts
+~**/*.svelte
+
+# Extra config files that add useful information.
++package.json
++README.md
++tailwind.config.js
++svelte.config.js
+
+# Exclude rules
+!node_modules/
+!build/
+!.svelte-kit/
+!**/package-lock.json
+!**/*.log
