@@ -72,13 +72,23 @@ class CopyTreeCommand extends Command
 
     private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): IncludeRuleset
     {
-        $customRulesetPath = $path.'/.ctreeinclude';
-        if (file_exists($customRulesetPath)) {
-            $io->note('Using custom ruleset from .ctreeinclude in the project directory');
+        // Check for custom ruleset in the current directory
+        $customRulesetPath = $this->findCustomRuleset($path, $rulesetOption);
+        if ($customRulesetPath) {
+            $io->note(sprintf('Using custom ruleset: %s', $customRulesetPath));
 
             return new IncludeRuleset($customRulesetPath);
         }
 
+        // If no custom ruleset found, check for predefined rulesets
+        $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
+        if ($predefinedRulesetPath) {
+            $io->note(sprintf('Using predefined ruleset: %s', $rulesetOption));
+
+            return new IncludeRuleset($predefinedRulesetPath);
+        }
+
+        // If still no ruleset found, use auto-detection or default
         $availableRulesets = $this->getAvailableRulesets();
         $guesser = new RulesetGuesser($path, $availableRulesets);
 
@@ -86,14 +96,9 @@ class CopyTreeCommand extends Command
             $rulesetOption = $guesser->guess();
             if ($rulesetOption !== 'default') {
                 $io->note(sprintf('Auto-detected ruleset: %s', $rulesetOption));
+
+                return new IncludeRuleset($this->getPredefinedRulesetPath($rulesetOption));
             }
-        }
-
-        $rulesetPath = $this->getRulesetPath($rulesetOption);
-        if ($rulesetPath) {
-            $io->note(sprintf('Using ruleset: %s', $rulesetOption));
-
-            return new IncludeRuleset($rulesetPath);
         }
 
         $defaultRulesetPath = $this->getDefaultRulesetPath();
@@ -103,7 +108,31 @@ class CopyTreeCommand extends Command
             return new IncludeRuleset($defaultRulesetPath);
         }
 
-        throw new Exception('Default ruleset not found. Please ensure .ctreeinclude is present in the rulesets directory.');
+        throw new Exception('No suitable ruleset found. Please ensure a valid ruleset is available.');
+    }
+
+    private function findCustomRuleset(string $path, string $rulesetOption): ?string
+    {
+        if ($rulesetOption !== 'auto') {
+            $customRulesetPath = $path.'/'.$rulesetOption.'.ctreeinclude';
+            if (file_exists($customRulesetPath)) {
+                return $customRulesetPath;
+            }
+        }
+
+        $defaultCustomRulesetPath = $path.'/.ctreeinclude';
+        if (file_exists($defaultCustomRulesetPath)) {
+            return $defaultCustomRulesetPath;
+        }
+
+        return null;
+    }
+
+    private function getPredefinedRulesetPath(string $rulesetName): ?string
+    {
+        $rulesetPath = realpath(__DIR__.'/../../rulesets/'.$rulesetName.'.ctreeinclude');
+
+        return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
     }
 
     private function getAllFiles(string $directory, int $depth): array
