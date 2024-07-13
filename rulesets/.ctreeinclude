@@ -1,0 +1,32 @@
+# Default .ctreeinclude
+# This file only specifies exclusions, as it's the fallback ruleset
+
+# Directories to exclude
+!vendor/
+!node_modules/
+!build/
+!dist/
+!out/
+!target/
+!bin/
+!obj/
+!logs/
+!temp/
+!tmp/
+!cache/
+
+# Hidden directories
+!.*/
+
+# Files to exclude (in any directory)
+!**/*.log
+!**/*.lock
+!**/.*
+!**/*.tmp
+!**/*.temp
+!**/*.swp
+!**/*.swo
+!**/*.bak
+!**/*.cache
+!**/Thumbs.db
+!**/.DS_Store

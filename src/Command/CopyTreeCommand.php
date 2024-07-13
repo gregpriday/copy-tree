@@ -4,7 +4,7 @@ namespace GregPriday\CopyTree\Command;
 
 use Exception;
 use GregPriday\CopyTree\Clipboard;
-use GregPriday\CopyTree\Ruleset\IgnoreRuleset;
+use GregPriday\CopyTree\Ruleset\IncludeRuleset;
 use GregPriday\CopyTree\Ruleset\RulesetGuesser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -70,13 +70,13 @@ class CopyTreeCommand extends Command
         }
     }
 
-    private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): IgnoreRuleset
+    private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): IncludeRuleset
     {
-        $customRulesetPath = $path.'/.ctreeignore';
+        $customRulesetPath = $path.'/.ctreeinclude';
         if (file_exists($customRulesetPath)) {
-            $io->note('Using custom ruleset from .ctreeignore in the project directory');
+            $io->note('Using custom ruleset from .ctreeinclude in the project directory');
 
-            return new IgnoreRuleset($customRulesetPath);
+            return new IncludeRuleset($customRulesetPath);
         }
 
         $availableRulesets = $this->getAvailableRulesets();
@@ -93,17 +93,17 @@ class CopyTreeCommand extends Command
         if ($rulesetPath) {
             $io->note(sprintf('Using ruleset: %s', $rulesetOption));
 
-            return new IgnoreRuleset($rulesetPath);
+            return new IncludeRuleset($rulesetPath);
         }
 
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         if (file_exists($defaultRulesetPath)) {
             $io->note('Using default ruleset');
 
-            return new IgnoreRuleset($defaultRulesetPath);
+            return new IncludeRuleset($defaultRulesetPath);
         }
 
-        throw new Exception('Default ruleset not found. Please ensure default.ctreeignore is present in the rulesets directory.');
+        throw new Exception('Default ruleset not found. Please ensure .ctreeinclude is present in the rulesets directory.');
     }
 
     private function getAllFiles(string $directory, int $depth): array
@@ -121,7 +121,7 @@ class CopyTreeCommand extends Command
         return $files;
     }
 
-    private function filterFiles(array $files, IgnoreRuleset $ruleset, string $filter): array
+    private function filterFiles(array $files, IncludeRuleset $ruleset, string $filter): array
     {
         return array_filter($files, function ($file) use ($ruleset, $filter) {
             return fnmatch($filter, basename($file)) && $ruleset->shouldInclude($file);
@@ -194,13 +194,13 @@ class CopyTreeCommand extends Command
 
     private function getDefaultRulesetPath(): string
     {
-        return realpath(__DIR__.'/../../rulesets/default.ctreeignore');
+        return realpath(__DIR__.'/../../rulesets/.ctreeinclude');
     }
 
     private function getRulesetPath(string $rulesetOption): ?string
     {
         $rulesetDir = realpath(__DIR__.'/../../rulesets');
-        $rulesetPath = $rulesetDir.'/'.$rulesetOption.'.ctreeignore';
+        $rulesetPath = $rulesetDir.'/'.$rulesetOption.'.ctreeinclude';
 
         return file_exists($rulesetPath) ? $rulesetPath : null;
     }
@@ -208,10 +208,10 @@ class CopyTreeCommand extends Command
     private function getAvailableRulesets(): array
     {
         $rulesetDir = realpath(__DIR__.'/../../rulesets');
-        $rulesets = glob($rulesetDir.'/*.ctreeignore');
+        $rulesets = glob($rulesetDir.'/*.ctreeinclude');
 
         return array_map(function ($path) {
-            return basename($path, '.ctreeignore');
+            return basename($path, '.ctreeinclude');
         }, $rulesets);
     }
 

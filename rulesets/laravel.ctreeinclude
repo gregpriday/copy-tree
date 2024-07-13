@@ -1,0 +1,24 @@
+# Laravel .ctreeinclude
+
+# Primary include rules (directories)
+app/**
+config/**
+database/migrations/**
+resources/views/**
+routes/**
+tests/**
+
+# Secondary include rules (file types)
+~**/*.php
+~**/*.blade.php
+~**/composer.json
+~**/.env.example
+
+# Exclude rules
+!vendor/
+!node_modules/
+!storage/
+!**/*.log
+!**/composer.lock
+!**/package-lock.json
+!**/.env
