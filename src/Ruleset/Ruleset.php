@@ -5,6 +5,7 @@ namespace GregPriday\CopyTree\Ruleset;
 use finfo;
 use Generator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -18,6 +19,10 @@ class Ruleset
     private array $includeRuleSets = [];
 
     private array $globalExcludeRules = [];
+
+    private array $alwaysIncludeFiles = [];
+
+    private array $alwaysExcludeFiles = [];
 
     public function __construct(string $basePath)
     {
@@ -38,17 +43,24 @@ class Ruleset
     {
         $engine = new self($basePath);
 
-        if (! isset($data['rules'])) {
-            throw new InvalidArgumentException("The 'rules' key is required in the configuration array.");
+        if (isset($data['rules'])) {
+            foreach ($data['rules'] as $ruleSet) {
+                $engine->addIncludeRuleSet($ruleSet);
+            }
         }
 
-        foreach ($data['rules'] as $ruleSet) {
-            $engine->addIncludeRuleSet($ruleSet);
-        }
-
-        if (isset($data['global'])) {
-            foreach ($data['global'] as $rule) {
+        if (isset($data['globalExcludeRules'])) {
+            foreach ($data['globalExcludeRules'] as $rule) {
                 $engine->addGlobalExcludeRule($rule);
+            }
+        }
+
+        if (isset($data['always'])) {
+            if (isset($data['always']['include'])) {
+                $engine->addAlwaysIncludeFiles($data['always']['include']);
+            }
+            if (isset($data['always']['exclude'])) {
+                $engine->addAlwaysExcludeFiles($data['always']['exclude']);
             }
         }
 
@@ -69,6 +81,20 @@ class Ruleset
         return $this;
     }
 
+    public function addAlwaysIncludeFiles(array $files): self
+    {
+        $this->alwaysIncludeFiles = array_merge($this->alwaysIncludeFiles, $files);
+
+        return $this;
+    }
+
+    public function addAlwaysExcludeFiles(array $files): self
+    {
+        $this->alwaysExcludeFiles = array_merge($this->alwaysExcludeFiles, $files);
+
+        return $this;
+    }
+
     /**
      * Get filtered files using a generator approach.
      *
@@ -82,17 +108,44 @@ class Ruleset
         );
 
         foreach ($iterator as $file) {
-            if ($file->isFile() && $this->shouldIncludeFile($file)) {
-                yield $this->getRelativePath($file);
+            if ($file->isFile()) {
+                $relativePath = $this->getRelativePath($file);
+                if ($this->isAlwaysIncluded($relativePath)) {
+                    yield $relativePath;
+                } elseif (! $this->isAlwaysExcluded($relativePath)) {
+                    continue;
+                }
+
+                if ($this->shouldIncludeFile($file)) {
+                    yield $relativePath;
+                }
             }
         }
+
+        // Yield any always-include files that weren't found in the directory
+        foreach ($this->alwaysIncludeFiles as $alwaysIncludeFile) {
+            $fullPath = $this->basePath.'/'.$alwaysIncludeFile;
+            if (! file_exists($fullPath)) {
+                yield $alwaysIncludeFile;
+            }
+        }
+    }
+
+    private function isAlwaysIncluded(string $relativePath): bool
+    {
+        return in_array($relativePath, $this->alwaysIncludeFiles);
+    }
+
+    private function isAlwaysExcluded(string $relativePath): bool
+    {
+        return in_array($relativePath, $this->alwaysExcludeFiles);
     }
 
     private function shouldIncludeFile(SplFileInfo $file): bool
     {
         // Check global exclude rules
         foreach ($this->globalExcludeRules as $rule) {
-            if (! $this->applyRule($file, $rule)) {
+            if ($this->applyRule($file, $rule)) {
                 return false;
             }
         }
@@ -151,10 +204,34 @@ class Ruleset
             'regex' => preg_match($value, $fieldValue) === 1,
             'glob' => preg_match(Glob::toRegex($value), $fieldValue) === 1,
             'fnmatch' => fnmatch($value, $fieldValue),
-            default => method_exists(Str::class, $operator) ?
-                Str::$operator($fieldValue, $value) :
-                throw new InvalidArgumentException("Unsupported operator: $operator"),
+            default => $this->handleStrOperations($operator, $fieldValue, $value),
         };
+    }
+
+    private function handleStrOperations(string $operator, mixed $fieldValue, mixed $value): bool
+    {
+        if (method_exists(Str::class, $operator)) {
+            return Str::$operator($fieldValue, $value);
+        }
+
+        if (Str::endsWith($operator, ['Any', 'All'])) {
+            $baseOperator = Str::substr($operator, 0, -3);
+            if (method_exists(Str::class, $baseOperator)) {
+                $suffix = Str::substr($operator, -3);
+                if (! is_array($value)) {
+                    throw new InvalidArgumentException("Value must be an array for {$operator} operation");
+                }
+                $checkFunction = function ($v) use ($baseOperator, $fieldValue) {
+                    return Str::$baseOperator($fieldValue, $v);
+                };
+                $collection = new Collection($value);
+
+                return $suffix === 'Any' ? $collection->contains($checkFunction)
+                    : $collection->every($checkFunction);
+            }
+        }
+
+        throw new InvalidArgumentException("Unsupported operator: $operator");
     }
 
     private function getFieldValue(SplFileInfo $file, string $field): mixed
@@ -187,11 +264,6 @@ class Ruleset
         $finfo = new finfo(FILEINFO_MIME_TYPE);
 
         return $finfo->file($file->getPathname());
-    }
-
-    private function matchRegex(string $value, string $pattern): bool
-    {
-        return preg_match($pattern, $value) === 1;
     }
 
     private function compareValues($a, $b, string $operator): int

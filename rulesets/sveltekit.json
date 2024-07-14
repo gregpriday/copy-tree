@@ -1,0 +1,21 @@
+{
+    "rules": [
+        [
+            ["folder", "startsWithAny", ["src", "static", "tests"]],
+            ["extension", "oneOf", ["js", "ts", "svelte"]]
+        ]
+    ],
+    "globalExcludeRules": [
+        ["folder", "startsWithAny", ["node_modules", "build", ".svelte-kit"]],
+        ["basename", "=", "package-lock.json"],
+        ["extension", "=", "log"]
+    ],
+    "always": {
+        "include": [
+            "package.json",
+            "README.md",
+            "tailwind.config.js",
+            "svelte.config.js"
+        ]
+    }
+}

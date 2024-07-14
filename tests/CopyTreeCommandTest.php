@@ -20,6 +20,16 @@ class CopyTreeCommandTest extends TestCase
         $this->commandTester = new CommandTester($command);
     }
 
+    public function testExecuteWithThisProject()
+    {
+        $this->commandTester->execute([
+            'path' => __DIR__.'/../',
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        dd($output);
+    }
+
     public function testExecuteWithDefaultOptions(): void
     {
         $this->commandTester->execute([
