@@ -78,7 +78,7 @@ class Clipboard
         $process->setInput($this->contents);
         $process->run();
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
     }
@@ -86,10 +86,10 @@ class Clipboard
     private function simulateClipboard(): void
     {
         // Simulate clipboard by writing to a file or environment variable
-        $clipboardFile = sys_get_temp_dir() . '/clipboard_contents.txt';
+        $clipboardFile = sys_get_temp_dir().'/clipboard_contents.txt';
         file_put_contents($clipboardFile, $this->contents);
 
         // Set an environment variable
-        putenv("SIMULATED_CLIPBOARD=" . base64_encode($this->contents));
+        putenv('SIMULATED_CLIPBOARD='.base64_encode($this->contents));
     }
 }
