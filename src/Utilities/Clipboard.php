@@ -65,8 +65,9 @@ class Clipboard
     private function runLinuxCommand(): void
     {
         // Check if DISPLAY is set (X server is available)
-        if(!getenv('DISPLAY')) {
+        if (! getenv('DISPLAY')) {
             $this->simulateClipboard();
+
             return;
         }
 
