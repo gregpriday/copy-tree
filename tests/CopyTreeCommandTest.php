@@ -2,7 +2,7 @@
 
 namespace GregPriday\CopyTree\Tests;
 
-use GregPriday\CopyTree\Command\CopyTreeCommand;
+use GregPriday\CopyTree\CopyTreeCommand;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;

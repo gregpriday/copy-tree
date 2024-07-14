@@ -1,9 +1,8 @@
 <?php
 
-namespace GregPriday\CopyTree\Command;
+namespace GregPriday\CopyTree;
 
 use Exception;
-use GregPriday\CopyTree\Clipboard;
 use GregPriday\CopyTree\Ruleset\Ruleset;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;

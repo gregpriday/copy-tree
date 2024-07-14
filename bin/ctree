@@ -24,7 +24,7 @@ $autoloader = (static function() {
     throw new Exception('Unable to find Composer autoloader. Please run "composer install".');
 })();
 
-use GregPriday\CopyTree\Command\CopyTreeCommand;
+use GregPriday\CopyTree\CopyTreeCommand;
 use Symfony\Component\Console\Application;
 
 $application = new Application();
