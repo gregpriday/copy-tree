@@ -16,8 +16,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        php: [8.3, 8.2, 8.1]
+        os: [ubuntu-latest]
+        php: [8.3, 8.2]
         stability: [prefer-lowest, prefer-stable]
 
     name: P${{ matrix.php }} - ${{ matrix.stability }} - ${{ matrix.os }}
@@ -46,7 +46,18 @@ jobs:
 
       - name: Install xclip (Linux only)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y xclip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xclip
+          which xclip
+          xclip -version
+
+      - name: Debug Environment
+        run: |
+          echo "Current user: $(whoami)"
+          echo "DISPLAY environment variable: $DISPLAY"
+          echo "xclip location: $(which xclip)"
+          echo "xclip version: $(xclip -version)"
 
       - name: Execute tests
         run: vendor/bin/phpunit

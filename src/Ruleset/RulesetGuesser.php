@@ -2,6 +2,11 @@
 
 namespace GregPriday\CopyTree\Ruleset;
 
+/**
+ * Guesses the appropriate ruleset based on project structure.
+ *
+ * Analyzes the project directory to determine the most suitable predefined ruleset.
+ */
 class RulesetGuesser
 {
     private string $projectPath;

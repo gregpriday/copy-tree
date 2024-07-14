@@ -1,0 +1,13 @@
+{
+    "rules": [
+        [
+            ["folder", "startsWithAny", ["src", "rulesets"]]
+        ]
+    ],
+    "always": {
+        "include": [
+            "composer.json",
+            "README.md"
+        ]
+    }
+}

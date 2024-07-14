@@ -6,6 +6,30 @@
 
 This command line tool allows you to copy the entire structure of a directory, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews or collaborative debugging sessions.
 
+## Features
+
+- Copy directory structure and file contents to clipboard, ready to paste into chatbots like [Claude](https://claude.ai/) or [ChatGPT](https://chatgpt.com/).
+- Flexible ruleset system for including/excluding files.
+- Support for custom, predefined, and auto-detected rulesets.
+- Output to clipboard, console, or file.
+- Cross-platform support (Linux, macOS, Windows).
+
+## Quick Start
+
+After installation, you can quickly copy the current directory structure to your clipboard:
+
+```bash
+ctree
+```
+
+You can get command help with 
+
+```bash
+ctree --help
+```
+
+If you're in a Laravel or Sveltekit project, the automatic rules will work out the box. Otherwise you'll need to specify a custom ruleset.
+
 ## Prerequisites
 
 Before installing and using `copy-tree`, make sure to have the necessary clipboard utilities installed on your system:
@@ -44,6 +68,12 @@ After installation, you can run the `copy-tree` command directly from your termi
 
 # Specify depth of directory tree
 ./vendor/bin/ctree --depth=3
+
+# Use a specific ruleset
+./vendor/bin/ctree --ruleset=laravel
+
+# Output to a file instead of clipboard
+./vendor/bin/ctree --output=output.txt
 ```
 
 ### Global Installation and Usage
@@ -80,40 +110,65 @@ ctree
 ctree --path=/path/to/directory --depth=2 --display
 ```
 
-This setup streamlines the installation and usage process, allowing quick and flexible use of `ctree` across your system.
+## Ruleset System
 
-## Ruleset Usage
-
-Copy-tree supports multiple rulesets to determine which files and directories to include or exclude. The ruleset system works in the following order:
+Ctree uses a flexible ruleset system to determine which files and directories to include or exclude. The ruleset system works in the following order:
 
 1. Custom rulesets in the current directory
 2. Predefined rulesets
 3. Auto-detection
 4. Default ruleset
 
+See the [Laravel Ruleset](./rulesets/laravel.json) for an example.
+
+### Ruleset Format
+
+Rulesets are defined in JSON format. Here's an overview of the structure:
+
+```json
+{
+    "rules": [
+        [
+            ["field", "operator", "value"],
+            ["field", "operator", "value"]
+        ]
+    ],
+    "globalExcludeRules": [
+        ["field", "operator", "value"]
+    ],
+    "always": {
+        "include": ["file1", "file2"],
+        "exclude": ["file3", "file4"]
+    }
+}
+```
+
+- `rules`: An array of rule sets. Each rule set is an array of rules that must all be true for a file to be included.
+- `globalExcludeRules`: An array of rules that, if any are true, will exclude a file.
+- `always`: Specifies files to always include or exclude, regardless of other rules.
+
+### Fields
+
+Available fields include:
+- `folder`, `path`, `dirname`, `basename`, `extension`, `filename`, `contents`, `contents_slice`, `size`, `mtime`, `mimeType`
+
+### Operators
+
+Available operators include:
+
+- `>`, `>=`, `<`, `<=`, `=`, `!=`, `oneOf`, `regex`, `glob`, `fnmatch`, `contains`, `startsWith`, `endsWith`, `length`, `isAscii`, `isJson`, `isUlid`, `isUrl`, `isUuid`
+
+For a complete reference of the ruleset schema, see the [`schema.json`](./rulesets/schema.json) file in the project repository.
+
 ### Custom Rulesets
 
-You can create custom ruleset files in your project directory:
+You can create a custom ruleset file named `/.ctree/ruleset.json` in your project directory. If this file exists, it will be used instead of any predefined or default rulesets.
 
-```
-/your_project
-    ├── .ctreeinclude          # Default custom ruleset
-    ├── frontend.ctreeinclude  # Custom ruleset for frontend files
-    ├── backend.ctreeinclude   # Custom ruleset for backend files
-    └── ... (other project files and directories)
-```
-
-Use these custom rulesets like this:
-
-```bash
-ctree                     # Uses .ctreeinclude
-ctree --ruleset frontend  # Uses frontend.ctreeinclude
-ctree --ruleset backend   # Uses backend.ctreeinclude
-```
+You can also create named rulesets at `/.ctree/example.json`, which will be used for `ctree -r example`.
 
 ### Predefined Rulesets
 
-Copy-tree comes with predefined rulesets for common project types. Use them like this:
+Ctree comes with predefined rulesets for common project types. Use them like this:
 
 ```bash
 ctree --ruleset laravel   # Uses the predefined Laravel ruleset
@@ -122,7 +177,7 @@ ctree --ruleset sveltekit # Uses the predefined SvelteKit ruleset
 
 ### Auto-detection
 
-If no ruleset is specified, copy-tree will attempt to auto-detect the project type and use an appropriate ruleset:
+If no ruleset is specified, Ctree will attempt to auto-detect the project type and use an appropriate ruleset:
 
 ```bash
 ctree  # Auto-detects project type and uses the most suitable ruleset
@@ -130,71 +185,30 @@ ctree  # Auto-detects project type and uses the most suitable ruleset
 
 ### Default Ruleset
 
-If no custom ruleset is found, no predefined ruleset is specified, and auto-detection fails, copy-tree will use the default ruleset.
+If no custom ruleset is found, no predefined ruleset is specified, and auto-detection fails, Ctree will use the default ruleset.
 
-### Examples:
+## Troubleshooting
 
-```bash
-# Use the default .ctreeinclude in the current directory
-ctree
+If you encounter issues with clipboard functionality:
 
-# Use a specific ruleset file
-ctree --ruleset=alt
+- **Linux**: Ensure `xclip` is installed and running.
+- **macOS**: Try running the command with `sudo` if you get permission errors.
+- **Windows**: Make sure you're running the command prompt as an administrator if you encounter permission issues.
 
-# This will look for 'alt.ctreeinclude' in the current directory
-```
+If the output is truncated, try using the `--output` option to save to a file instead of copying to the clipboard.
 
-If you have multiple rulesets in your project, you might have a structure like this:
+## Contributing
 
-```
-/your_project
-    ├── .ctreeinclude          # Default ruleset
-    ├── frontend.ctreeinclude  # Ruleset for frontend files
-    ├── backend.ctreeinclude   # Ruleset for backend files
-    └── ... (other project files and directories)
-```
+Contributions are welcome! Here's how you can contribute:
 
-You can then use these rulesets like this:
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-```bash
-ctree                     # Uses .ctreeinclude
-ctree --ruleset frontend  # Uses frontend.ctreeinclude
-ctree --ruleset backend   # Uses backend.ctreeinclude
-```
-
-## Ruleset Format
-
-The ruleset format is as follows:
-
-```
-# Primary include rules (directories)
-app/**
-config/**
-
-# Secondary include rules (file types)
-~**/*.php
-~**/*.json
-
-# Force include specific files
-+composer.json
-+README.md
-
-# Exclude rules
-!vendor/
-!node_modules/
-
-# Force exclude specific files
--sensitive_file.txt
-```
-
-- Lines starting with `#` are comments.
-- Lines without a prefix are primary include rules (usually directories).
-- Lines starting with `~` are secondary include rules (usually file types).
-- Lines starting with `+` are force include rules.
-- Lines starting with `!` are exclude rules.
-- Lines starting with `-` are force exclude rules.
-
-By using multiple ruleset files, you can quickly switch between different configurations for various tasks or parts of your project.
+Please make sure to update tests as appropriate. For more details, see the [CONTRIBUTING](CONTRIBUTING.md) file.
 
 ## Testing
 
@@ -208,13 +222,9 @@ composer test
 
 For details on recent changes, check out the [CHANGELOG](CHANGELOG.md).
 
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
 ## Security
 
-If you discover any security related issues, please email greg@siteorigin.com instead of using the issue tracker.
+If you discover any security related issues, please email [greg@siteorigin.com](mailto:greg@siteorigin.com) instead of using the issue tracker.
 
 ## Credits
 

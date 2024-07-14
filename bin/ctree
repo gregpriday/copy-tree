@@ -1,17 +1,29 @@
 #!/usr/bin/env php
 <?php
 
-if (file_exists(__DIR__ . '/../../../autoload.php')) {
-    // The path when installed globally
-    require __DIR__ . '/../../../autoload.php';
-} elseif (file_exists(__DIR__ . '/../vendor/autoload.php')) {
-    // The path when installed locally
-    require __DIR__ . '/../vendor/autoload.php';
-} else {
-    throw new Exception('Autoloader not found.');
-}
+include __DIR__ . '/../bootstrap/constants.php';
 
-use GregPriday\CopyTree\Command\CopyTreeCommand;
+// Use Composer's autoloader locator
+$autoloader = (static function() {
+    $paths = [
+        // Global installation path
+        PROJECT_ROOT . '/../../../autoload.php',
+        // Local installation path
+        PROJECT_ROOT . '/vendor/autoload.php',
+        // Path for development when working on the package itself
+        PROJECT_ROOT . '/../../autoload.php',
+    ];
+
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            return require $path;
+        }
+    }
+
+    throw new Exception('Unable to find Composer autoloader. Please run "composer install".');
+})();
+
+use GregPriday\CopyTree\CopyTreeCommand;
 use Symfony\Component\Console\Application;
 
 $application = new Application();

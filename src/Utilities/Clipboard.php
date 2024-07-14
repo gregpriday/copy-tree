@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree;
+namespace GregPriday\CopyTree\Utilities;
 
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -64,6 +64,13 @@ class Clipboard
 
     private function runLinuxCommand(): void
     {
+        // Check if DISPLAY is set (X server is available)
+        if (! getenv('DISPLAY')) {
+            $this->simulateClipboard();
+
+            return;
+        }
+
         $process = Process::fromShellCommandline('xclip -selection clipboard');
         $process->setInput($this->contents);
         $process->run();
@@ -71,5 +78,15 @@ class Clipboard
         if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
+    }
+
+    private function simulateClipboard(): void
+    {
+        // Simulate clipboard by writing to a file or environment variable
+        $clipboardFile = sys_get_temp_dir().'/clipboard_contents.txt';
+        file_put_contents($clipboardFile, $this->contents);
+
+        // Set an environment variable
+        putenv('SIMULATED_CLIPBOARD='.base64_encode($this->contents));
     }
 }

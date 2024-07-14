@@ -1,0 +1,8 @@
+{
+    "globalExcludeRules": [
+        ["folder", "startsWithAny", ["vendor", "node_modules", "build", "dist", "out", "target", "bin", "obj", "logs", "temp", "tmp", "cache"]],
+        ["basename", "startsWith", "."],
+        ["extension", "oneOf", ["log", "lock", "tmp", "temp", "swp", "swo", "bak", "cache"]],
+        ["basename", "oneOf", ["Thumbs.db", ".DS_Store"]]
+    ]
+}
