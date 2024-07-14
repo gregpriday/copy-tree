@@ -12,7 +12,7 @@ use InvalidArgumentException;
 use SplFileInfo;
 use Symfony\Component\Finder\Glob;
 
-class Ruleset
+class RulesetFilter
 {
     private string $basePath;
 
