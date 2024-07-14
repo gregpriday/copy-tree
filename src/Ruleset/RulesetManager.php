@@ -71,14 +71,14 @@ class RulesetManager
 
     private function getPredefinedRulesetPath(string $rulesetName): ?string
     {
-        $rulesetPath = realpath(__DIR__.'/../../../rulesets/'.$rulesetName.'.json');
+        $rulesetPath = realpath(PROJECT_ROOT.'/rulesets/'.$rulesetName.'.json');
 
         return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
     }
 
     private function getDefaultRulesetPath(): string
     {
-        return realpath(__DIR__.'/../../../rulesets/default.json');
+        return realpath(PROJECT_ROOT.'/rulesets/default.json');
     }
 
     private function guessRuleset(): string
@@ -91,7 +91,7 @@ class RulesetManager
     public function getAvailableRulesets(): array
     {
         // Get predefined rulesets
-        $rulesetDir = realpath(__DIR__.'/../../../rulesets');
+        $rulesetDir = realpath(PROJECT_ROOT.'/rulesets');
         $predefinedRulesets = glob($rulesetDir.'/*.json');
         $rulesets = array_map(function ($path) {
             return basename($path, '.json');
@@ -108,7 +108,7 @@ class RulesetManager
         }
 
         // Remove 'default' from the list if it exists
-        $rulesets = array_diff($rulesets, ['default', 'ruleset']);
+        $rulesets = array_diff($rulesets, ['default', 'ruleset', 'schema']);
 
         // Add 'auto' option
         array_unshift($rulesets, 'auto');

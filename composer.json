@@ -29,6 +29,9 @@
         "symfony/phpunit-bridge": "^6.0|^7.0"
     },
     "autoload": {
+        "files": [
+            "bootstrap/constants.php"
+        ],
         "psr-4": {
             "GregPriday\\CopyTree\\": "src"
         }

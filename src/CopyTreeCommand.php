@@ -4,7 +4,6 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -29,13 +28,13 @@ class CopyTreeCommand extends Command
             ->setName('app:copy-tree')
             ->setDescription('Copies the directory tree to the clipboard and optionally displays it.')
             ->setHelp('This command copies the directory tree to the clipboard by default. You can also display the tree in the console or skip copying to the clipboard.')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The directory path', getcwd())
-            ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree', 10)
-            ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
-            ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
-            ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
+            ->addOption('path', 'p', InputOption::VALUE_OPTIONAL, 'The directory path.', getcwd())
+            ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
+            ->addOption('no-clipboard', 'n', InputOption::VALUE_NONE, 'Do not copy the output to the clipboard.')
+            ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
+            ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
-            ->addOption('no-contents', null, InputOption::VALUE_NONE, 'Exclude file contents from the output');
+            ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -45,11 +44,21 @@ class CopyTreeCommand extends Command
 
         try {
             $rulesetManager = new RulesetManager($path, $io);
-            $executor = new CopyTreeExecutor($rulesetManager);
-            $outputManager = new OutputManager();
 
-            $result = $executor->execute($input, $output);
-            $outputManager->handleOutput($result, $input, $output);
+            $executor = new CopyTreeExecutor(
+                $rulesetManager,
+                $input->getOption('ruleset'),
+                $input->getOption('only-tree')
+            );
+
+            $outputManager = new OutputManager(
+                $input->getOption('no-clipboard'),
+                $input->getOption('display'),
+                $input->getOption('output')
+            );
+
+            $result = $executor->execute();
+            $outputManager->handleOutput($result, $io);
 
             return Command::SUCCESS;
         } catch (\Exception $e) {

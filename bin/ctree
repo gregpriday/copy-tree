@@ -1,14 +1,13 @@
 #!/usr/bin/env php
 <?php
 
-// Define the project root directory
-define('PROJECT_ROOT', dirname(__DIR__));
+include __DIR__ . '/../bootstrap/constants.php';
 
 // Use Composer's autoloader locator
 $autoloader = (static function() {
     $paths = [
         // Global installation path
-        __DIR__ . '/../../../autoload.php',
+        PROJECT_ROOT . '/../../../autoload.php',
         // Local installation path
         PROJECT_ROOT . '/vendor/autoload.php',
         // Path for development when working on the package itself
