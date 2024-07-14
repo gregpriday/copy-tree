@@ -25,7 +25,7 @@ class CopyTreeCommandTest extends TestCase
 
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('Copied', $output);
-        $this->assertFilesCopied($output, 25); // Adjust this number as needed
+        $this->assertFilesCopied($output, 15); // Adjust this number as needed
     }
 
     public function testExecuteWithDisplayOption()
