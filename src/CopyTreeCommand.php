@@ -2,6 +2,7 @@
 
 namespace GregPriday\CopyTree;
 
+use GregPriday\CopyTree\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -34,21 +35,24 @@ class CopyTreeCommand extends Command
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
-            ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.');
+            ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
+            ->addOption('filter', 'f', InputOption::VALUE_OPTIONAL, 'Filter files using a glob pattern on the relative path.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $path = $input->getArgument('path') ?? getcwd();
+        $filter = $input->getOption('filter');
 
         try {
             $rulesetManager = new RulesetManager($path, $io);
+            $ruleset = $filter ?
+                $rulesetManager->createRulesetFromGlob($filter) :
+                $rulesetManager->getRuleset($input->getOption('ruleset'));
 
             $executor = new CopyTreeExecutor(
-                $rulesetManager,
-                $input->getOption('ruleset'),
-                $input->getOption('only-tree')
+                $input->getOption('only-tree'),
             );
 
             $outputManager = new OutputManager(
@@ -56,7 +60,7 @@ class CopyTreeCommand extends Command
                 $input->getOption('output')
             );
 
-            $result = $executor->execute();
+            $result = $executor->execute($ruleset);
             $outputManager->handleOutput($result, $io);
 
             return Command::SUCCESS;
@@ -65,5 +69,14 @@ class CopyTreeCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    private function createRulesetFromGlob(string $glob, $path)
+    {
+        return RulesetFilter::fromArray([
+            'rules' => [
+                [['path', 'glob', $glob]]
+            ]
+        ], $path);
     }
 }

@@ -157,6 +157,10 @@ class RulesetFilter
             }
         }
 
+        if(empty($this->includeRuleSets)){
+            return true;
+        }
+
         // Check include rule sets
         foreach ($this->includeRuleSets as $ruleSet) {
             if ($this->matchesAllRules($file, $ruleSet)) {

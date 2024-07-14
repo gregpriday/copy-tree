@@ -15,6 +15,18 @@ class CopyTreeCommandTest extends TestCase
         $this->assertFilesCopied($output, 15); // Adjust this number as needed
     }
 
+    public function testExecuteWithFilter()
+    {
+        $this->commandTester->execute([
+            'path' => __DIR__.'/dir',
+            '--filter' => '*/*.txt',
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('Copied', $output);
+        $this->assertFilesCopied($output, 1);
+    }
+
     public function testExecuteWithLaravelProject()
     {
         $laravelPath = __DIR__.'/../vendor/laravel/laravel';
@@ -25,7 +37,7 @@ class CopyTreeCommandTest extends TestCase
 
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('Copied', $output);
-        $this->assertFilesCopied($output, 15); // Adjust this number as needed
+        $this->assertFilesCopied($output, 15);
     }
 
     public function testExecuteWithDisplayOption()
@@ -51,7 +63,7 @@ class CopyTreeCommandTest extends TestCase
 
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString('Saved', $output);
-        $this->assertFilesCopied($output, 15); // Adjust this number as needed
+        $this->assertFilesCopied($output, 15);
         $this->assertFileExists($outputFile);
         $fileContents = file_get_contents($outputFile);
         $this->assertStringContainsString('.', $fileContents); // Root directory

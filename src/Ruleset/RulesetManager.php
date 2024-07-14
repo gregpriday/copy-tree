@@ -126,4 +126,13 @@ class RulesetManager
 
         return array_unique($rulesets);
     }
+
+    public function createRulesetFromGlob(string $glob): RulesetFilter
+    {
+        return RulesetFilter::fromArray([
+            'rules' => [
+                [['path', 'glob', $glob]]
+            ]
+        ], $this->basePath);
+    }
 }

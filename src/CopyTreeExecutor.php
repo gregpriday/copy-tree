@@ -2,6 +2,7 @@
 
 namespace GregPriday\CopyTree;
 
+use GregPriday\CopyTree\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
@@ -13,19 +14,13 @@ use GregPriday\CopyTree\Views\FileTreeView;
  */
 class CopyTreeExecutor
 {
-    private RulesetManager $rulesetManager;
-
     public function __construct(
-        RulesetManager $rulesetManager,
-        private string $rulesetOption,
         private bool $onlyTree
     ) {
-        $this->rulesetManager = $rulesetManager;
     }
 
-    public function execute(): array
+    public function execute(RulesetFilter $ruleset): array
     {
-        $ruleset = $this->rulesetManager->getRuleset($this->rulesetOption);
         $filteredFiles = iterator_to_array($ruleset->getFilteredFiles());
 
         $treeOutput = FileTreeView::render($filteredFiles);
