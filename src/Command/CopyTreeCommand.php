@@ -21,7 +21,7 @@ class CopyTreeCommand extends Command
     protected function configure(): void
     {
         $availableRulesets = $this->getAvailableRulesets();
-        $rulesetDescription = 'Ruleset to apply (auto, '.implode(', ', $availableRulesets).')';
+        $rulesetDescription = 'Ruleset to apply ('.implode(', ', $availableRulesets).')';
 
         $this
             ->setName('app:copy-tree')
@@ -81,18 +81,22 @@ class CopyTreeCommand extends Command
 
     private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): Ruleset
     {
-        $customRulesetPath = $path.'/ctree.json';
+        $customRulesetPath = $path.'/.ctree/ruleset.json';
         if (file_exists($customRulesetPath)) {
             $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
-
             return Ruleset::fromJson(file_get_contents($customRulesetPath), $path);
         }
 
         if ($rulesetOption !== 'auto') {
+            $customRulesetPath = $path.'/.ctree/'.$rulesetOption.'.json';
+            if (file_exists($customRulesetPath)) {
+                $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
+                return Ruleset::fromJson(file_get_contents($customRulesetPath), $path);
+            }
+
             $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
             if ($predefinedRulesetPath) {
                 $io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), OutputInterface::VERBOSITY_VERBOSE);
-
                 return Ruleset::fromJson(file_get_contents($predefinedRulesetPath), $path);
             }
         }
@@ -101,14 +105,12 @@ class CopyTreeCommand extends Command
             $guessedRuleset = $this->guessRuleset($path);
             if ($guessedRuleset !== 'default') {
                 $io->writeln(sprintf('Auto-detected ruleset: %s', $guessedRuleset), OutputInterface::VERBOSITY_VERBOSE);
-
                 return Ruleset::fromJson(file_get_contents($this->getPredefinedRulesetPath($guessedRuleset)), $path);
             }
         }
 
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         $io->writeln('Using default ruleset', OutputInterface::VERBOSITY_VERBOSE);
-
         return Ruleset::fromJson(file_get_contents($defaultRulesetPath), $path);
     }
 
@@ -147,12 +149,30 @@ class CopyTreeCommand extends Command
 
     private function getAvailableRulesets(): array
     {
+        // Get predefined rulesets
         $rulesetDir = realpath(__DIR__.'/../../rulesets');
-        $rulesets = glob($rulesetDir.'/*.json');
-
-        return array_map(function ($path) {
+        $predefinedRulesets = glob($rulesetDir.'/*.json');
+        $rulesets = array_map(function ($path) {
             return basename($path, '.json');
-        }, $rulesets);
+        }, $predefinedRulesets);
+
+        // Get custom rulesets
+        $customRulesetDir = getcwd().'/.ctree';
+        if (is_dir($customRulesetDir)) {
+            $customRulesets = glob($customRulesetDir.'/*.json');
+            $customRulesets = array_map(function ($path) {
+                return basename($path, '.json');
+            }, $customRulesets);
+            $rulesets = array_merge($rulesets, $customRulesets);
+        }
+
+        // Remove 'default' from the list if it exists
+        $rulesets = array_diff($rulesets, ['default']);
+
+        // Add 'auto' option
+        array_unshift($rulesets, 'auto');
+
+        return array_unique($rulesets);
     }
 
     private function generateDefaultOutputFilename($path): string
