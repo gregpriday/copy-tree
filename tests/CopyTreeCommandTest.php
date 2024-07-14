@@ -2,24 +2,8 @@
 
 namespace GregPriday\CopyTree\Tests;
 
-use GregPriday\CopyTree\CopyTreeCommand;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Tester\CommandTester;
-
 class CopyTreeCommandTest extends TestCase
 {
-    private $commandTester;
-
-    protected function setUp(): void
-    {
-        $application = new Application();
-        $application->add(new CopyTreeCommand());
-
-        $command = $application->find('app:copy-tree');
-        $this->commandTester = new CommandTester($command);
-    }
-
     public function testExecuteWithThisProject()
     {
         $this->commandTester->execute([
@@ -27,72 +11,101 @@ class CopyTreeCommandTest extends TestCase
         ]);
 
         $output = $this->commandTester->getDisplay();
-        dd($output);
+        $this->assertStringContainsString('Copied', $output);
+        $this->assertFilesCopied($output, 15); // Adjust this number as needed
     }
 
-    public function testExecuteWithDefaultOptions(): void
+    public function testExecuteWithLaravelProject()
     {
+        $laravelPath = __DIR__.'/../vendor/laravel/laravel';
         $this->commandTester->execute([
-            'path' => __DIR__.'/dir',
-        ]);
-
-        $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
-        $this->assertMatchesRegularExpression('/[0-9]+ file contents have been copied to the clipboard./', $output);
-    }
-
-    public function testNoClipboardOption(): void
-    {
-        $this->commandTester->execute([
-            'path' => __DIR__.'/dir',
-            '--no-clipboard' => true,
-        ]);
-
-        $output = $this->commandTester->getDisplay();
-        $this->assertStringNotContainsString('have been copied to the clipboard', $output);
-    }
-
-    public function testDisplayOption(): void
-    {
-        $this->commandTester->execute([
-            'path' => __DIR__.'/dir',
-            '--display' => true,
-        ]);
-
-        $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('>', $output); // Check for part of the output format
-    }
-
-    public function testCopySveltekitFolder()
-    {
-        $this->commandTester->execute([
-            'path' => '/Users/gpriday/Sites/vectorlens-sveltekit',
-            '--ruleset' => 'sveltekit',
-        ]);
-
-        $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
-    }
-
-    public function testCopyLaravelFolder()
-    {
-        $this->commandTester->execute([
-            'path' => '/Users/gpriday/Sites/vectorlens',
+            'path' => $laravelPath,
             '--ruleset' => 'laravel',
         ]);
 
         $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('file contents have been copied to the clipboard.', $output);
+        $this->assertStringContainsString('Copied', $output);
+        $this->assertFilesCopied($output, 25); // Adjust this number as needed
     }
 
-    public function testCopyBaseFolder()
+    public function testExecuteWithDisplayOption()
     {
-        // Set the current working directory to ../
-        chdir(__DIR__.'/..');
-
-        // Now run the command
         $this->commandTester->execute([
-            'path' => '.',
+            'path' => __DIR__.'/../',
+            '--display' => true,
         ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('.', $output); // Root directory
+        $this->assertStringContainsString('src', $output); // src directory
+        $this->assertStringContainsString('<file_contents', $output); // File contents
+    }
+
+    public function testExecuteWithOutputOption()
+    {
+        $outputFile = sys_get_temp_dir().'/copy-tree-output.txt';
+        $this->commandTester->execute([
+            'path' => __DIR__.'/../',
+            '--output' => $outputFile,
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('Saved', $output);
+        $this->assertFilesCopied($output, 15); // Adjust this number as needed
+        $this->assertFileExists($outputFile);
+        $fileContents = file_get_contents($outputFile);
+        $this->assertStringContainsString('.', $fileContents); // Root directory
+        $this->assertStringContainsString('src', $fileContents); // src directory
+        $this->assertStringContainsString('<file_contents', $fileContents); // File contents
+
+        // Clean up
+        unlink($outputFile);
+    }
+
+    public function testExecuteWithOnlyTreeOption()
+    {
+        $this->commandTester->execute([
+            'path' => __DIR__.'/../',
+            '--only-tree' => true,
+            '--display' => true,
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('.', $output); // Root directory
+        $this->assertStringContainsString('src', $output); // src directory
+        $this->assertStringNotContainsString('<file_contents', $output); // No file contents
+    }
+
+    public function testExecuteWithCustomRuleset()
+    {
+        // Create a temporary custom ruleset file in the project root
+        $projectRoot = dirname(__DIR__); // Go up one level from the tests directory
+        $rulesetDir = $projectRoot.'/.ctree';
+        $rulesetFile = $rulesetDir.'/test-ruleset.json';
+
+        $rulesetContent = json_encode([
+            'rules' => [
+                [
+                    ['path', 'startsWith', 'src'],
+                    ['extension', '=', 'php'],
+                ],
+            ],
+        ]);
+
+        file_put_contents($rulesetFile, $rulesetContent);
+
+        $this->commandTester->execute([
+            'path' => $projectRoot,
+            '--ruleset' => 'test-ruleset',
+            '--only-tree' => true,
+            '--display' => true,
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString('.php', $output);
+        $this->assertStringNotContainsString('.json', $output);
+
+        // Clean up
+        unlink($rulesetFile);
     }
 }

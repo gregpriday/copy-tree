@@ -23,16 +23,8 @@ class RulesetManager
 
     public function getRuleset(string $rulesetOption): RulesetFilter
     {
-        $customRulesetPath = $this->basePath.'/.ctree/ruleset.json';
-        if (file_exists($customRulesetPath)) {
-            if ($this->io) {
-                $this->io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
-            }
-
-            return RulesetFilter::fromJson(file_get_contents($customRulesetPath), $this->basePath);
-        }
-
         if ($rulesetOption !== 'auto') {
+            // Look for custom ruleset in project directory
             $customRulesetPath = $this->basePath.'/.ctree/'.$rulesetOption.'.json';
             if (file_exists($customRulesetPath)) {
                 if ($this->io) {
@@ -42,29 +34,48 @@ class RulesetManager
                 return RulesetFilter::fromJson(file_get_contents($customRulesetPath), $this->basePath);
             }
 
-            $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
-            if ($predefinedRulesetPath) {
+            // Look for predefined ruleset in PROJECT_ROOT/rulesets/
+            $predefinedRulesetPath = PROJECT_ROOT.'/rulesets/'.$rulesetOption.'.json';
+            if (file_exists($predefinedRulesetPath)) {
                 if ($this->io) {
                     $this->io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), SymfonyStyle::VERBOSITY_VERBOSE);
                 }
 
                 return RulesetFilter::fromJson(file_get_contents($predefinedRulesetPath), $this->basePath);
             }
+
+            // If ruleset is not found, throw an error
+            throw new \InvalidArgumentException(sprintf('Ruleset "%s" not found.', $rulesetOption));
         }
 
-        if ($rulesetOption === 'auto') {
-            $guessedRuleset = $this->guessRuleset();
-            if ($guessedRuleset !== 'default') {
+        // Check for custom default ruleset
+        $customDefaultRulesetPath = $this->basePath.'/.ctree/ruleset.json';
+        if (file_exists($customDefaultRulesetPath)) {
+            if ($this->io) {
+                $this->io->writeln(sprintf('Using custom default ruleset: %s', $customDefaultRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
+            }
+
+            return RulesetFilter::fromJson(file_get_contents($customDefaultRulesetPath), $this->basePath);
+        }
+
+        // Auto-detect ruleset
+        $guessedRuleset = $this->guessRuleset();
+        if ($guessedRuleset !== 'default') {
+            $guessedRulesetPath = PROJECT_ROOT.'/rulesets/'.$guessedRuleset.'.json';
+            if (file_exists($guessedRulesetPath)) {
                 if ($this->io) {
                     $this->io->writeln(sprintf('Auto-detected ruleset: %s', $guessedRuleset), SymfonyStyle::VERBOSITY_VERBOSE);
                 }
 
-                return RulesetFilter::fromJson(file_get_contents($this->getPredefinedRulesetPath($guessedRuleset)), $this->basePath);
+                return RulesetFilter::fromJson(file_get_contents($guessedRulesetPath), $this->basePath);
             }
         }
 
-        $defaultRulesetPath = $this->getDefaultRulesetPath();
-        $this->io->writeln('Using default ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
+        // Use default ruleset
+        $defaultRulesetPath = PROJECT_ROOT.'/rulesets/default.json';
+        if ($this->io) {
+            $this->io->writeln('Using default ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
+        }
 
         return RulesetFilter::fromJson(file_get_contents($defaultRulesetPath), $this->basePath);
     }

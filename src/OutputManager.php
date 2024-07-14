@@ -34,7 +34,7 @@ class OutputManager
 
         if ($this->displayOutput) {
             $io->writeln('Displaying output in console:', OutputInterface::VERBOSITY_VERBOSE);
-            $io->text($result['output']);
+            $io->write($result['output']);
         }
 
         $io->writeln(sprintf('Total output size: %d characters', strlen($result['output'])), OutputInterface::VERBOSITY_VERBOSE);
