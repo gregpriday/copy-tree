@@ -84,6 +84,7 @@ class CopyTreeCommand extends Command
         $customRulesetPath = $path.'/.ctree/ruleset.json';
         if (file_exists($customRulesetPath)) {
             $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
+
             return Ruleset::fromJson(file_get_contents($customRulesetPath), $path);
         }
 
@@ -91,12 +92,14 @@ class CopyTreeCommand extends Command
             $customRulesetPath = $path.'/.ctree/'.$rulesetOption.'.json';
             if (file_exists($customRulesetPath)) {
                 $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
+
                 return Ruleset::fromJson(file_get_contents($customRulesetPath), $path);
             }
 
             $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
             if ($predefinedRulesetPath) {
                 $io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), OutputInterface::VERBOSITY_VERBOSE);
+
                 return Ruleset::fromJson(file_get_contents($predefinedRulesetPath), $path);
             }
         }
@@ -105,12 +108,14 @@ class CopyTreeCommand extends Command
             $guessedRuleset = $this->guessRuleset($path);
             if ($guessedRuleset !== 'default') {
                 $io->writeln(sprintf('Auto-detected ruleset: %s', $guessedRuleset), OutputInterface::VERBOSITY_VERBOSE);
+
                 return Ruleset::fromJson(file_get_contents($this->getPredefinedRulesetPath($guessedRuleset)), $path);
             }
         }
 
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         $io->writeln('Using default ruleset', OutputInterface::VERBOSITY_VERBOSE);
+
         return Ruleset::fromJson(file_get_contents($defaultRulesetPath), $path);
     }
 
