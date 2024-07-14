@@ -65,15 +65,11 @@ class Clipboard
     private function runLinuxCommand(): void
     {
         // Check if DISPLAY is set (X server is available)
-        if (getenv('DISPLAY')) {
-            $this->runXclipCommand();
-        } else {
+        if(!getenv('DISPLAY')) {
             $this->simulateClipboard();
+            return;
         }
-    }
 
-    private function runXclipCommand(): void
-    {
         $process = Process::fromShellCommandline('xclip -selection clipboard');
         $process->setInput($this->contents);
         $process->run();
