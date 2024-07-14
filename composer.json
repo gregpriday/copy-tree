@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "ext-fileinfo": "*",
         "illuminate/support": "^11.15",
         "symfony/console": "^6.0|^7.0",
