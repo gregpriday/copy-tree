@@ -32,7 +32,8 @@ class CopyTreeCommand extends Command
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
             ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
-            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto');
+            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
+            ->addOption('no-contents', null, InputOption::VALUE_NONE, 'Exclude file contents from the output');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -47,6 +48,7 @@ class CopyTreeCommand extends Command
         $displayOutput = $input->getOption('display');
         $outputFile = $input->getOption('output');
         $rulesetOption = $input->getOption('ruleset');
+        $noContents = $input->getOption('no-contents');
 
         if ($input->hasParameterOption(['--output', '-o']) && is_null($outputFile)) {
             $outputFile = $this->generateDefaultOutputFilename($path);
@@ -58,9 +60,12 @@ class CopyTreeCommand extends Command
             $filteredFiles = iterator_to_array($ruleset->getFilteredFiles());
 
             $treeOutput = FileTreeView::render($filteredFiles);
-            $fileContentsOutput = FileContentsView::render($filteredFiles);
+            $combinedOutput = $treeOutput;
 
-            $combinedOutput = $treeOutput."\n\n---\n\n".$fileContentsOutput;
+            if (! $noContents) {
+                $fileContentsOutput = FileContentsView::render($filteredFiles);
+                $combinedOutput .= "\n\n---\n\n".$fileContentsOutput;
+            }
 
             $this->handleOutput($combinedOutput, count($filteredFiles), $noClipboard, $outputFile, $displayOutput, $io);
 
