@@ -2,6 +2,11 @@
 
 namespace GregPriday\CopyTree\Views;
 
+/**
+ * Renders file contents for the copy tree output.
+ *
+ * Generates a formatted view of file contents, including file paths and MIME types.
+ */
 class FileContentsView
 {
     public static function render(array $files): string

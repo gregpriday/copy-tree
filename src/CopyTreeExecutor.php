@@ -8,6 +8,11 @@ use GregPriday\CopyTree\Views\FileTreeView;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Executes the copy tree operation, applying rulesets and generating output.
+ *
+ * Manages the process of filtering files, rendering the tree view and file contents.
+ */
 class CopyTreeExecutor
 {
     private RulesetManager $rulesetManager;

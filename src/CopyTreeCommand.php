@@ -10,6 +10,11 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Command to copy directory tree structure and file contents to clipboard or file.
+ *
+ * Allows filtering files based on rulesets, setting depth, and controlling output options.
+ */
 class CopyTreeCommand extends Command
 {
     protected static string $defaultName = 'app:copy-tree';
@@ -37,7 +42,7 @@ class CopyTreeCommand extends Command
         try {
             $rulesetManager = new RulesetManager($path, $io);
             $executor = new CopyTreeExecutor($rulesetManager);
-            $outputManager = new OutputManager(new Clipboard());
+            $outputManager = new OutputManager();
 
             $result = $executor->execute($input, $output);
             $outputManager->handleOutput($result, $input, $output);

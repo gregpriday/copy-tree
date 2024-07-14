@@ -4,6 +4,11 @@ namespace GregPriday\CopyTree\Ruleset;
 
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Manages ruleset selection and loading for the copy tree operation.
+ *
+ * Handles custom, predefined, and auto-detected rulesets, prioritizing them appropriately.
+ */
 class RulesetManager
 {
     private string $basePath;

@@ -12,6 +12,11 @@ use InvalidArgumentException;
 use SplFileInfo;
 use Symfony\Component\Finder\Glob;
 
+/**
+ * Applies ruleset filters to determine which files to include or exclude.
+ *
+ * Supports complex rule combinations, including global exclusions, conditional inclusions, and always-include files.
+ */
 class RulesetFilter
 {
     private string $basePath;

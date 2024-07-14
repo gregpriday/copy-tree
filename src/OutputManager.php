@@ -2,17 +2,23 @@
 
 namespace GregPriday\CopyTree;
 
+use GregPriday\CopyTree\Utilities\Clipboard;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * Manages the output of the copy tree operation.
+ *
+ * Handles saving to file, copying to clipboard, and displaying in console based on user options.
+ */
 class OutputManager
 {
     private Clipboard $clipboard;
 
-    public function __construct(Clipboard $clipboard)
+    public function __construct()
     {
-        $this->clipboard = $clipboard;
+        $this->clipboard = new Clipboard();
     }
 
     public function handleOutput(array $result, InputInterface $input, OutputInterface $output): void

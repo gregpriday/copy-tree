@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree;
+namespace GregPriday\CopyTree\Utilities;
 
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;

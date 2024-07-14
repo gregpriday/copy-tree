@@ -2,6 +2,11 @@
 
 namespace GregPriday\CopyTree\Views;
 
+/**
+ * Renders a directory tree structure similar to the 'tree' command output.
+ *
+ * Generates a hierarchical view of files and directories using ASCII characters.
+ */
 class FileTreeView
 {
     public static function render(array $files): string
