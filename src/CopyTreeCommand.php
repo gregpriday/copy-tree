@@ -21,6 +21,10 @@ class CopyTreeCommand extends Command
 
     protected function configure(): void
     {
+        $rulesetManager = new RulesetManager(getcwd());
+        $rulesetNames = $rulesetManager->getAvailableRulesets();
+        $rulesetDescription = 'Ruleset to apply. Available options: '.implode(', ', $rulesetNames).'. Default: auto';
+
         $this
             ->setName('app:copy-tree')
             ->setDescription('Copies the directory tree to the clipboard and optionally displays it.')
@@ -30,7 +34,7 @@ class CopyTreeCommand extends Command
             ->addOption('no-clipboard', null, InputOption::VALUE_NONE, 'Do not copy the output to the clipboard')
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard')
             ->addOption('display', null, InputOption::VALUE_NONE, 'Display the output in the console.')
-            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, 'Ruleset to apply', 'auto')
+            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('no-contents', null, InputOption::VALUE_NONE, 'Exclude file contents from the output');
     }
 

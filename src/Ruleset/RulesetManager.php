@@ -13,9 +13,9 @@ class RulesetManager
 {
     private string $basePath;
 
-    private SymfonyStyle $io;
+    private ?SymfonyStyle $io;
 
-    public function __construct(string $basePath, SymfonyStyle $io)
+    public function __construct(string $basePath, ?SymfonyStyle $io = null)
     {
         $this->basePath = $basePath;
         $this->io = $io;
@@ -25,7 +25,9 @@ class RulesetManager
     {
         $customRulesetPath = $this->basePath.'/.ctree/ruleset.json';
         if (file_exists($customRulesetPath)) {
-            $this->io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
+            if ($this->io) {
+                $this->io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
+            }
 
             return RulesetFilter::fromJson(file_get_contents($customRulesetPath), $this->basePath);
         }
@@ -33,14 +35,18 @@ class RulesetManager
         if ($rulesetOption !== 'auto') {
             $customRulesetPath = $this->basePath.'/.ctree/'.$rulesetOption.'.json';
             if (file_exists($customRulesetPath)) {
-                $this->io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
+                if ($this->io) {
+                    $this->io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), SymfonyStyle::VERBOSITY_VERBOSE);
+                }
 
                 return RulesetFilter::fromJson(file_get_contents($customRulesetPath), $this->basePath);
             }
 
             $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
             if ($predefinedRulesetPath) {
-                $this->io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), SymfonyStyle::VERBOSITY_VERBOSE);
+                if ($this->io) {
+                    $this->io->writeln(sprintf('Using predefined ruleset: %s', $rulesetOption), SymfonyStyle::VERBOSITY_VERBOSE);
+                }
 
                 return RulesetFilter::fromJson(file_get_contents($predefinedRulesetPath), $this->basePath);
             }
@@ -49,7 +55,9 @@ class RulesetManager
         if ($rulesetOption === 'auto') {
             $guessedRuleset = $this->guessRuleset();
             if ($guessedRuleset !== 'default') {
-                $this->io->writeln(sprintf('Auto-detected ruleset: %s', $guessedRuleset), SymfonyStyle::VERBOSITY_VERBOSE);
+                if ($this->io) {
+                    $this->io->writeln(sprintf('Auto-detected ruleset: %s', $guessedRuleset), SymfonyStyle::VERBOSITY_VERBOSE);
+                }
 
                 return RulesetFilter::fromJson(file_get_contents($this->getPredefinedRulesetPath($guessedRuleset)), $this->basePath);
             }
@@ -100,7 +108,7 @@ class RulesetManager
         }
 
         // Remove 'default' from the list if it exists
-        $rulesets = array_diff($rulesets, ['default']);
+        $rulesets = array_diff($rulesets, ['default', 'ruleset']);
 
         // Add 'auto' option
         array_unshift($rulesets, 'auto');
