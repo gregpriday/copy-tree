@@ -2,7 +2,7 @@
 
 namespace GregPriday\CopyTree\Tests;
 
-use GregPriday\CopyTree\CopyTreeCommand;
+use GregPriday\CopyTree\CopyTree;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -14,7 +14,7 @@ class CopyTreeCommandTest extends TestCase
     protected function setUp(): void
     {
         $application = new Application();
-        $application->add(new CopyTreeCommand());
+        $application->add(new CopyTree());
 
         $command = $application->find('app:copy-tree');
         $this->commandTester = new CommandTester($command);
