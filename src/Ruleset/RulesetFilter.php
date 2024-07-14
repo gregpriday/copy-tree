@@ -118,18 +118,7 @@ class RulesetFilter
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 $relativePath = $this->getRelativePath($file);
-                if ($this->isAlwaysIncluded($relativePath)) {
-                    yield [
-                        'path' => $relativePath,
-                        'file' => $file,
-                    ];
-
-                    continue;
-                } elseif ($this->isAlwaysExcluded($relativePath)) {
-                    continue;
-                }
-
-                if ($this->shouldIncludeFile($file)) {
+                if ($this->shouldIncludeFile($file, $relativePath)) {
                     yield [
                         'path' => $relativePath,
                         'file' => $file,
@@ -149,8 +138,18 @@ class RulesetFilter
         return in_array($relativePath, $this->alwaysExcludeFiles);
     }
 
-    private function shouldIncludeFile(SplFileInfo $file): bool
+    private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
+        // Check always exclude files second
+        if ($this->isAlwaysExcluded($relativePath)) {
+            return false;
+        }
+
+        // Check always include files first
+        if ($this->isAlwaysIncluded($relativePath)) {
+            return true;
+        }
+
         // Check global exclude rules
         foreach ($this->globalExcludeRules as $rule) {
             if ($this->applyRule($file, $rule)) {
