@@ -44,6 +44,12 @@ After installation, you can run the `copy-tree` command directly from your termi
 
 # Specify depth of directory tree
 ./vendor/bin/ctree --depth=3
+
+# Use a specific ruleset
+./vendor/bin/ctree --ruleset=laravel
+
+# Output to a file instead of clipboard
+./vendor/bin/ctree --output=output.txt
 ```
 
 ### Global Installation and Usage
@@ -80,11 +86,9 @@ ctree
 ctree --path=/path/to/directory --depth=2 --display
 ```
 
-This setup streamlines the installation and usage process, allowing quick and flexible use of `ctree` across your system.
+## Ruleset System
 
-## Ruleset Usage
-
-Copy-tree supports multiple rulesets to determine which files and directories to include or exclude. The ruleset system works in the following order:
+Copy-tree uses a flexible ruleset system to determine which files and directories to include or exclude. The ruleset system works in the following order:
 
 1. Custom rulesets in the current directory
 2. Predefined rulesets
@@ -93,23 +97,7 @@ Copy-tree supports multiple rulesets to determine which files and directories to
 
 ### Custom Rulesets
 
-You can create custom ruleset files in your project directory:
-
-```
-/your_project
-    ├── .ctreeinclude          # Default custom ruleset
-    ├── frontend.ctreeinclude  # Custom ruleset for frontend files
-    ├── backend.ctreeinclude   # Custom ruleset for backend files
-    └── ... (other project files and directories)
-```
-
-Use these custom rulesets like this:
-
-```bash
-ctree                     # Uses .ctreeinclude
-ctree --ruleset frontend  # Uses frontend.ctreeinclude
-ctree --ruleset backend   # Uses backend.ctreeinclude
-```
+You can create a custom ruleset file named `ctree.json` in your project directory. If this file exists, it will be used instead of any predefined or default rulesets.
 
 ### Predefined Rulesets
 
@@ -132,69 +120,78 @@ ctree  # Auto-detects project type and uses the most suitable ruleset
 
 If no custom ruleset is found, no predefined ruleset is specified, and auto-detection fails, copy-tree will use the default ruleset.
 
-### Examples:
-
-```bash
-# Use the default .ctreeinclude in the current directory
-ctree
-
-# Use a specific ruleset file
-ctree --ruleset=alt
-
-# This will look for 'alt.ctreeinclude' in the current directory
-```
-
-If you have multiple rulesets in your project, you might have a structure like this:
-
-```
-/your_project
-    ├── .ctreeinclude          # Default ruleset
-    ├── frontend.ctreeinclude  # Ruleset for frontend files
-    ├── backend.ctreeinclude   # Ruleset for backend files
-    └── ... (other project files and directories)
-```
-
-You can then use these rulesets like this:
-
-```bash
-ctree                     # Uses .ctreeinclude
-ctree --ruleset frontend  # Uses frontend.ctreeinclude
-ctree --ruleset backend   # Uses backend.ctreeinclude
-```
-
 ## Ruleset Format
 
-The ruleset format is as follows:
+Rulesets are defined in JSON format. Here's an overview of the structure:
 
-```
-# Primary include rules (directories)
-app/**
-config/**
-
-# Secondary include rules (file types)
-~**/*.php
-~**/*.json
-
-# Force include specific files
-+composer.json
-+README.md
-
-# Exclude rules
-!vendor/
-!node_modules/
-
-# Force exclude specific files
--sensitive_file.txt
+```json
+{
+    "rules": [
+        [
+            ["field", "operator", "value"],
+            ["field", "operator", "value"]
+        ]
+    ],
+    "globalExcludeRules": [
+        ["field", "operator", "value"]
+    ],
+    "always": {
+        "include": ["file1", "file2"],
+        "exclude": ["file3", "file4"]
+    }
+}
 ```
 
-- Lines starting with `#` are comments.
-- Lines without a prefix are primary include rules (usually directories).
-- Lines starting with `~` are secondary include rules (usually file types).
-- Lines starting with `+` are force include rules.
-- Lines starting with `!` are exclude rules.
-- Lines starting with `-` are force exclude rules.
+- `rules`: An array of rule sets. Each rule set is an array of rules that must all be true for a file to be included.
+- `globalExcludeRules`: An array of rules that, if any are true, will exclude a file.
+- `always`: Specifies files to always include or exclude, regardless of other rules.
 
-By using multiple ruleset files, you can quickly switch between different configurations for various tasks or parts of your project.
+### Fields
+
+Available fields include:
+
+- `folder`, `path`, `dirname`, `basename`, `extension`, `filename`, `contents`, `contents_slice`, `size`, `mtime`, `mimeType`
+
+### Operators
+
+Available operators include:
+
+- `>`, `>=`, `<`, `<=`, `=`, `!=`, `oneOf`, `regex`, `glob`, `fnmatch`, `contains`, `startsWith`, `endsWith`, `length`, `isAscii`, `isJson`, `isUlid`, `isUrl`, `isUuid`
+
+For a complete reference of the ruleset schema, see the `schema.json` file in the project repository.
+
+## Examples
+
+Here are some example rulesets:
+
+### Laravel Ruleset
+
+```json
+{
+    "rules": [
+        [
+            ["folder", "startsWithAny", ["app", "config", "database/migrations", "resources/views", "routes", "tests"]],
+            ["extension", "oneOf", ["php", "blade.php"]]
+        ]
+    ],
+    "globalExcludeRules": [
+        ["folder", "startsWithAny", ["vendor", "node_modules", "storage"]],
+        ["extension", "oneOf", ["log", "lock"]],
+        ["basename", "startsWith", ".env"]
+    ],
+    "always": {
+        "include": [
+            "composer.json",
+            "README.md",
+            ".env.example"
+        ],
+        "exclude": [
+            "composer.lock",
+            "package-lock.json"
+        ]
+    }
+}
+```
 
 ## Testing
 
