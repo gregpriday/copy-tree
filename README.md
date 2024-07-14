@@ -160,6 +160,8 @@ Available operators include:
 
 For a complete reference of the ruleset schema, see the [`schema.json`](./rulesets/schema.json) file in the project repository.
 
+All operators can be negated by prefixing them with 'not', e.g., `notOneOf`, `notRegex`, `notStartsWith`. This allows for more flexible exclusion rules.
+
 ### Custom Rulesets
 
 You can create a custom ruleset file named `/.ctree/ruleset.json` in your project directory. If this file exists, it will be used instead of any predefined or default rulesets.

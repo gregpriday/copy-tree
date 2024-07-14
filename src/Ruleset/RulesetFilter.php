@@ -202,9 +202,12 @@ class RulesetFilter
         [$field, $operator, $value] = $rule;
         $fieldValue = $this->getFieldValue($file, $field);
 
-        $result = $this->compareValues($fieldValue, $value, $operator);
+        $isNegation = Str::startsWith($operator, 'not');
+        $baseOperator = $isNegation ? Str::camel(Str::after($operator, 'not')) : $operator;
 
-        return match ($operator) {
+        $result = $this->compareValues($fieldValue, $value, $baseOperator);
+
+        $comparisonResult = match (Str::lower($baseOperator)) {
             '>' => $result > 0,
             '>=' => $result >= 0,
             '<' => $result < 0,
@@ -215,8 +218,10 @@ class RulesetFilter
             'regex' => preg_match($value, $fieldValue) === 1,
             'glob' => preg_match(Glob::toRegex($value), $fieldValue) === 1,
             'fnmatch' => fnmatch($value, $fieldValue),
-            default => $this->handleStrOperations($operator, $fieldValue, $value),
+            default => $this->handleStrOperations($baseOperator, $fieldValue, $value),
         };
+
+        return $isNegation ? ! $comparisonResult : $comparisonResult;
     }
 
     private function handleStrOperations(string $operator, mixed $fieldValue, mixed $value): bool
