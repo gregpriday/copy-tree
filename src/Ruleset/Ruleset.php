@@ -26,7 +26,7 @@ class Ruleset
 
     public function __construct(string $basePath)
     {
-        $this->basePath = rtrim($basePath, '/');
+        $this->basePath = rtrim(realpath($basePath), '/');
     }
 
     public static function fromJson(string $jsonString, string $basePath): self
@@ -103,7 +103,10 @@ class Ruleset
     public function getFilteredFiles(): Generator
     {
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->basePath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator(
+                $this->basePath,
+                \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS
+            ),
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
@@ -112,21 +115,14 @@ class Ruleset
                 $relativePath = $this->getRelativePath($file);
                 if ($this->isAlwaysIncluded($relativePath)) {
                     yield $relativePath;
-                } elseif (! $this->isAlwaysExcluded($relativePath)) {
+                    continue;
+                } elseif ($this->isAlwaysExcluded($relativePath)) {
                     continue;
                 }
 
                 if ($this->shouldIncludeFile($file)) {
                     yield $relativePath;
                 }
-            }
-        }
-
-        // Yield any always-include files that weren't found in the directory
-        foreach ($this->alwaysIncludeFiles as $alwaysIncludeFile) {
-            $fullPath = $this->basePath.'/'.$alwaysIncludeFile;
-            if (! file_exists($fullPath)) {
-                yield $alwaysIncludeFile;
             }
         }
     }
@@ -237,7 +233,7 @@ class Ruleset
     private function getFieldValue(SplFileInfo $file, string $field): mixed
     {
         $relativePath = $this->getRelativePath($file);
-        $pathInfo = pathinfo($file->getPathname());
+        $pathInfo = pathinfo($relativePath);
 
         return match ($field) {
             'folder' => dirname($relativePath),
@@ -247,6 +243,7 @@ class Ruleset
             'extension' => $pathInfo['extension'] ?? '',
             'filename' => $pathInfo['filename'],
             'contents' => file_get_contents($file->getPathname()),
+            'contents_slice' => substr(file_get_contents($file->getPathname()), 0, 256),
             'size' => $file->getSize(),
             'mtime' => $file->getMTime(),
             'mimeType' => $this->getMimeType($file),
@@ -256,7 +253,7 @@ class Ruleset
 
     private function getRelativePath(SplFileInfo $file): string
     {
-        return str_replace($this->basePath.'/', '', $file->getPathname());
+        return str_replace($this->basePath.'/', '', $file->getRealPath());
     }
 
     private function getMimeType(SplFileInfo $file): string
