@@ -64,12 +64,32 @@ class Clipboard
 
     private function runLinuxCommand(): void
     {
+        // Check if DISPLAY is set (X server is available)
+        if (getenv('DISPLAY')) {
+            $this->runXclipCommand();
+        } else {
+            $this->simulateClipboard();
+        }
+    }
+
+    private function runXclipCommand(): void
+    {
         $process = Process::fromShellCommandline('xclip -selection clipboard');
         $process->setInput($this->contents);
         $process->run();
 
-        if (! $process->isSuccessful()) {
+        if (!$process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
+    }
+
+    private function simulateClipboard(): void
+    {
+        // Simulate clipboard by writing to a file or environment variable
+        $clipboardFile = sys_get_temp_dir() . '/clipboard_contents.txt';
+        file_put_contents($clipboardFile, $this->contents);
+
+        // Set an environment variable
+        putenv("SIMULATED_CLIPBOARD=" . base64_encode($this->contents));
     }
 }
