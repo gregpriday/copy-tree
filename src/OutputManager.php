@@ -16,7 +16,6 @@ class OutputManager
     private Clipboard $clipboard;
 
     public function __construct(
-        private bool $noClipboard,
         private bool $displayOutput,
         private ?string $outputFile
     ) {
@@ -28,7 +27,7 @@ class OutputManager
         if ($this->outputFile) {
             $this->saveToFile($result['output'], $this->outputFile);
             $io->writeln(sprintf('<info>✓ Saved %d files to %s</info>', $result['fileCount'], $this->outputFile));
-        } elseif (! $this->noClipboard) {
+        } elseif (! $this->displayOutput) {
             $this->clipboard->copy($result['output']);
             $io->writeln(sprintf('<info>✓ Copied %d files to clipboard</info>', $result['fileCount']));
         }
