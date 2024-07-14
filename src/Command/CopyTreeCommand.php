@@ -5,6 +5,8 @@ namespace GregPriday\CopyTree\Command;
 use Exception;
 use GregPriday\CopyTree\Clipboard;
 use GregPriday\CopyTree\Ruleset\Ruleset;
+use GregPriday\CopyTree\Views\FileContentsView;
+use GregPriday\CopyTree\Views\FileTreeView;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,7 +39,6 @@ class CopyTreeCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        // Set verbosity based on the input
         $io->setVerbosity($output->getVerbosity());
 
         $path = $input->getArgument('path');
@@ -54,15 +55,14 @@ class CopyTreeCommand extends Command
         try {
             $ruleset = $this->getRuleset($path, $rulesetOption, $io);
 
-            $treeOutput = [];
-            $fileContentsOutput = [];
+            $filteredFiles = iterator_to_array($ruleset->getFilteredFiles());
 
-            $this->generateTree($ruleset->getFilteredFiles(), $path, $treeOutput, $fileContentsOutput);
+            $treeOutput = FileTreeView::render($filteredFiles);
+            $fileContentsOutput = FileContentsView::render($filteredFiles);
 
-            $combinedOutput = array_merge($treeOutput, ['', '---', ''], $fileContentsOutput);
-            $formattedOutput = implode("\n", $combinedOutput);
+            $combinedOutput = $treeOutput."\n\n---\n\n".$fileContentsOutput;
 
-            $this->handleOutput($formattedOutput, iterator_count($ruleset->getFilteredFiles()), $noClipboard, $outputFile, $displayOutput, $io);
+            $this->handleOutput($combinedOutput, count($filteredFiles), $noClipboard, $outputFile, $displayOutput, $io);
 
             $io->writeln(sprintf('Used maximum depth of %d', $depth), OutputInterface::VERBOSITY_VERBOSE);
 
@@ -76,7 +76,6 @@ class CopyTreeCommand extends Command
 
     private function getRuleset(string $path, string $rulesetOption, SymfonyStyle $io): Ruleset
     {
-        // Check for custom ruleset in the current directory
         $customRulesetPath = $path.'/ctree.json';
         if (file_exists($customRulesetPath)) {
             $io->writeln(sprintf('Using custom ruleset: %s', $customRulesetPath), OutputInterface::VERBOSITY_VERBOSE);
@@ -84,7 +83,6 @@ class CopyTreeCommand extends Command
             return Ruleset::fromJson(file_get_contents($customRulesetPath), $path);
         }
 
-        // If no custom ruleset found, check for predefined rulesets
         if ($rulesetOption !== 'auto') {
             $predefinedRulesetPath = $this->getPredefinedRulesetPath($rulesetOption);
             if ($predefinedRulesetPath) {
@@ -94,7 +92,6 @@ class CopyTreeCommand extends Command
             }
         }
 
-        // If still no ruleset found or 'auto' option is used, attempt to guess the ruleset
         if ($rulesetOption === 'auto') {
             $guessedRuleset = $this->guessRuleset($path);
             if ($guessedRuleset !== 'default') {
@@ -104,59 +101,10 @@ class CopyTreeCommand extends Command
             }
         }
 
-        // Use default ruleset
         $defaultRulesetPath = $this->getDefaultRulesetPath();
         $io->writeln('Using default ruleset', OutputInterface::VERBOSITY_VERBOSE);
 
         return Ruleset::fromJson(file_get_contents($defaultRulesetPath), $path);
-    }
-
-    private function getPredefinedRulesetPath(string $rulesetName): ?string
-    {
-        $rulesetPath = realpath(__DIR__.'/../../rulesets/'.$rulesetName.'.json');
-
-        return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
-    }
-
-    private function generateTree(iterable $files, string $basePath, array &$treeOutput, array &$fileContentsOutput, string $prefix = ''): void
-    {
-        $tree = [];
-        foreach ($files as $file) {
-            $parts = explode('/', $file);
-            $current = &$tree;
-            foreach ($parts as $part) {
-                if (! isset($current[$part])) {
-                    $current[$part] = [];
-                }
-                $current = &$current[$part];
-            }
-        }
-
-        $this->renderTree($tree, $treeOutput, $fileContentsOutput, $basePath);
-    }
-
-    private function renderTree(array $tree, array &$treeOutput, array &$fileContentsOutput, string $basePath, string $prefix = ''): void
-    {
-        foreach ($tree as $name => $subtree) {
-            $treeOutput[] = $prefix.$name;
-            $path = $basePath.'/'.$name;
-
-            if (empty($subtree) && is_file($path)) {
-                $fileContentsOutput[] = '';
-                $fileContentsOutput[] = '> '.$name;
-                $fileContentsOutput[] = '```';
-                try {
-                    $content = file_get_contents($path);
-                    $fileContentsOutput[] = $content;
-                } catch (Exception $e) {
-                    $fileContentsOutput[] = $e->getMessage();
-                }
-                $fileContentsOutput[] = '```';
-                $fileContentsOutput[] = '';
-            } else {
-                $this->renderTree($subtree, $treeOutput, $fileContentsOutput, $path, $prefix.'│   ');
-            }
-        }
     }
 
     private function handleOutput(string $output, int $fileCount, bool $noClipboard, ?string $outputFile, bool $displayOutput, SymfonyStyle $io): void
@@ -178,6 +126,13 @@ class CopyTreeCommand extends Command
         }
 
         $io->writeln(sprintf('Total output size: %d characters', strlen($output)), OutputInterface::VERBOSITY_VERBOSE);
+    }
+
+    private function getPredefinedRulesetPath(string $rulesetName): ?string
+    {
+        $rulesetPath = realpath(__DIR__.'/../../rulesets/'.$rulesetName.'.json');
+
+        return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
     }
 
     private function getDefaultRulesetPath(): string

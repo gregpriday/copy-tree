@@ -114,7 +114,10 @@ class Ruleset
             if ($file->isFile()) {
                 $relativePath = $this->getRelativePath($file);
                 if ($this->isAlwaysIncluded($relativePath)) {
-                    yield $relativePath;
+                    yield [
+                        'path' => $relativePath,
+                        'file' => $file,
+                    ];
 
                     continue;
                 } elseif ($this->isAlwaysExcluded($relativePath)) {
@@ -122,7 +125,10 @@ class Ruleset
                 }
 
                 if ($this->shouldIncludeFile($file)) {
-                    yield $relativePath;
+                    yield [
+                        'path' => $relativePath,
+                        'file' => $file,
+                    ];
                 }
             }
         }
