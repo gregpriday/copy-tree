@@ -75,8 +75,8 @@ class CopyTreeCommand extends Command
     {
         return RulesetFilter::fromArray([
             'rules' => [
-                [['path', 'glob', $glob]]
-            ]
+                [['path', 'glob', $glob]],
+            ],
         ], $path);
     }
 }

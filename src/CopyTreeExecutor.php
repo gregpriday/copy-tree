@@ -3,7 +3,6 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
-use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 
@@ -16,8 +15,7 @@ class CopyTreeExecutor
 {
     public function __construct(
         private bool $onlyTree
-    ) {
-    }
+    ) {}
 
     public function execute(RulesetFilter $ruleset): array
     {

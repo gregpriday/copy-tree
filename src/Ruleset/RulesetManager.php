@@ -131,8 +131,8 @@ class RulesetManager
     {
         return RulesetFilter::fromArray([
             'rules' => [
-                [['path', 'glob', $glob]]
-            ]
+                [['path', 'glob', $glob]],
+            ],
         ], $this->basePath);
     }
 }

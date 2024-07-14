@@ -157,7 +157,7 @@ class RulesetFilter
             }
         }
 
-        if(empty($this->includeRuleSets)){
+        if (empty($this->includeRuleSets)) {
             return true;
         }
 
