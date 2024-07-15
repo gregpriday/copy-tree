@@ -207,7 +207,7 @@ class RulesetFilter
 
         $result = $this->compareValues($fieldValue, $value, $baseOperator);
 
-        $comparisonResult = match (Str::lower($baseOperator)) {
+        $comparisonResult = match ($baseOperator) {
             '>' => $result > 0,
             '>=' => $result >= 0,
             '<' => $result < 0,

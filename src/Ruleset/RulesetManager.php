@@ -27,6 +27,7 @@ class RulesetManager
             if ($this->io) {
                 $this->io->writeln('Using no ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
             }
+
             return $this->createEmptyRuleset();
         }
         if ($rulesetOption !== 'auto') {
@@ -149,8 +150,8 @@ class RulesetManager
             'globalExcludeRules' => [],
             'always' => [
                 'include' => [],
-                'exclude' => []
-            ]
+                'exclude' => [],
+            ],
         ], $this->basePath);
     }
 }

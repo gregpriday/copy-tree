@@ -2,7 +2,6 @@
 
 namespace GregPriday\CopyTree;
 
-use GregPriday\CopyTree\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
