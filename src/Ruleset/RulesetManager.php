@@ -23,6 +23,12 @@ class RulesetManager
 
     public function getRuleset(string $rulesetOption): RulesetFilter
     {
+        if ($rulesetOption === 'none') {
+            if ($this->io) {
+                $this->io->writeln('Using no ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
+            }
+            return $this->createEmptyRuleset();
+        }
         if ($rulesetOption !== 'auto') {
             // Look for custom ruleset in project directory
             $customRulesetPath = $this->basePath.'/.ctree/'.$rulesetOption.'.json';
@@ -133,6 +139,18 @@ class RulesetManager
             'rules' => [
                 [['path', 'glob', $glob]],
             ],
+        ], $this->basePath);
+    }
+
+    public function createEmptyRuleset(): RulesetFilter
+    {
+        return RulesetFilter::fromArray([
+            'rules' => [],
+            'globalExcludeRules' => [],
+            'always' => [
+                'include' => [],
+                'exclude' => []
+            ]
         ], $this->basePath);
     }
 }

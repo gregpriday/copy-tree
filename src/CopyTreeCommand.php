@@ -44,12 +44,18 @@ class CopyTreeCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $path = $input->getArgument('path') ?? getcwd();
         $filter = $input->getOption('filter');
+        $rulesetOption = $input->getOption('ruleset');
 
         try {
             $rulesetManager = new RulesetManager($path, $io);
-            $ruleset = $filter ?
-                $rulesetManager->createRulesetFromGlob($filter) :
-                $rulesetManager->getRuleset($input->getOption('ruleset'));
+
+            if ($filter) {
+                $ruleset = $rulesetManager->createRulesetFromGlob($filter);
+            } elseif ($rulesetOption === 'none') {
+                $ruleset = $rulesetManager->createEmptyRuleset();
+            } else {
+                $ruleset = $rulesetManager->getRuleset($rulesetOption);
+            }
 
             $executor = new CopyTreeExecutor(
                 $input->getOption('only-tree'),
@@ -69,14 +75,5 @@ class CopyTreeCommand extends Command
 
             return Command::FAILURE;
         }
-    }
-
-    private function createRulesetFromGlob(string $glob, $path)
-    {
-        return RulesetFilter::fromArray([
-            'rules' => [
-                [['path', 'glob', $glob]],
-            ],
-        ], $path);
     }
 }
