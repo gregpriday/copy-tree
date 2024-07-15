@@ -1,7 +1,7 @@
 {
     "rules": [
         [
-            ["folder", "startsWithAny", ["src", "rulesets"]]
+            ["folder", "startsWithAny", ["src", "rulesets", "docs"]]
         ]
     ],
     "always": {

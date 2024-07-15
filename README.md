@@ -10,6 +10,7 @@ This command line tool allows you to copy the entire structure of a directory, i
 
 - Copy directory structure and file contents to clipboard, ready to paste into chatbots like [Claude](https://claude.ai/) or [ChatGPT](https://chatgpt.com/).
 - Flexible ruleset system for including/excluding files.
+- Support for multiple rulesets to target different parts of your project.
 - Support for custom, predefined, and auto-detected rulesets.
 - Output to clipboard, console, or file.
 - Cross-platform support (Linux, macOS, Windows).
@@ -29,6 +30,17 @@ ctree --help
 ```
 
 If you're in a Laravel or Sveltekit project, the automatic rules will work out the box. Otherwise you'll need to specify a custom ruleset.
+
+## Documentation
+
+For more detailed information on using Ctree, please refer to the following documentation:
+
+- [Ruleset Examples](docs/examples.md): Various examples of rulesets for different project types.
+- [Writing Rulesets](docs/rulesets.md): Detailed guide on how to write and structure rulesets.
+- [Fields and Operations Reference](docs/fields-and-operations.md): Complete list of available fields and operations for rulesets.
+- [Using Multiple Rulesets](docs/multiple-rulesets.md): Guide on using multiple rulesets in a single project.
+
+For a quick overview of the ruleset system, see the [Ruleset System](#ruleset-system) section below.
 
 ## Prerequisites
 
@@ -121,6 +133,10 @@ Ctree uses a flexible ruleset system to determine which files and directories to
 
 See the [Laravel Ruleset](./rulesets/laravel.json) for an example.
 
+For a complete guide on writing rulesets, see the [Writing Rulesets](docs/rulesets.md) documentation.
+
+For examples of rulesets for various project types, check out our [Ruleset Examples](docs/examples.md).
+
 ### Ruleset Format
 
 Rulesets are defined in JSON format. Here's an overview of the structure:
@@ -167,6 +183,25 @@ All operators can be negated by prefixing them with 'not', e.g., `notOneOf`, `no
 You can create a custom ruleset file named `/.ctree/ruleset.json` in your project directory. If this file exists, it will be used instead of any predefined or default rulesets.
 
 You can also create named rulesets at `/.ctree/example.json`, which will be used for `ctree -r example`.
+
+### Multiple Rulesets
+
+Ctree supports the use of multiple rulesets within a single project, allowing you to selectively share different parts of your codebase. This is particularly useful for large projects with distinct sections or modules.
+
+To use multiple rulesets:
+
+1. Create separate JSON files for each ruleset in the `/.ctree` directory of your project.
+2. Name each file according to the desired ruleset name (e.g., `/.ctree/frontend.json`, `/.ctree/backend.json`).
+3. Use the `--ruleset` or `-r` option to specify which ruleset to apply:
+
+```bash
+ctree --ruleset frontend
+ctree --ruleset backend
+```
+
+This feature enables you to easily share specific parts of your project, such as only the frontend code or only the backend code, without having to modify your ruleset each time.
+
+For more detailed information on using multiple rulesets, refer to the [Using Multiple Rulesets](docs/multiple-rulesets.md) documentation.
 
 ### Predefined Rulesets
 
