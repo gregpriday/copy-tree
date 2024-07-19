@@ -108,7 +108,7 @@ class RulesetFilter
     public function getFilteredFiles(): Generator
     {
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
+            new FilteredDirIterator(
                 $this->basePath,
                 \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS
             ),
