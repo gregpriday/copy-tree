@@ -26,6 +26,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
             if ($children->isDir() && $this->shouldSkip($children->getPathname())) {
                 $children->next();
             }
+
             return $children;
         } catch (\UnexpectedValueException $e) {
             return new self($this->getPath(), $this->getFlags());
@@ -43,6 +44,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
     private function shouldSkip(string $path): bool
     {
         $basename = basename($path);
+
         return in_array($basename, self::$ignoredDirs) || str_starts_with($basename, '.');
     }
 }
