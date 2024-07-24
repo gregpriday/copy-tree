@@ -29,7 +29,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
 
     public function hasChildren($allowLinks = false): bool
     {
-        return !$this->isSkippedDir && parent::hasChildren($allowLinks) && !$this->shouldSkip($this->getPathname());
+        return ! $this->isSkippedDir && parent::hasChildren($allowLinks) && ! $this->shouldSkip($this->getPathname());
     }
 
     public function getChildren(): \RecursiveDirectoryIterator
@@ -38,6 +38,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
             return new self($this->getPathname(), $this->getFlags());
         }
         $this->isSkippedDir = true;
+
         return $this;
     }
 
@@ -51,7 +52,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
 
     public function valid(): bool
     {
-        return !$this->isSkippedDir && parent::valid() && !$this->shouldSkip($this->getPathname());
+        return ! $this->isSkippedDir && parent::valid() && ! $this->shouldSkip($this->getPathname());
     }
 
     public function rewind(): void
@@ -73,6 +74,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
     private function shouldSkip(string $path): bool
     {
         $basename = basename($path);
+
         return in_array($basename, self::$ignoredDirs) || str_starts_with($basename, '.');
     }
 
