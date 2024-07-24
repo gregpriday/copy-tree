@@ -13,8 +13,8 @@ class TestCase extends BaseTestCase
 
     protected function setUp(): void
     {
-        $application = new Application();
-        $application->add(new CopyTreeCommand());
+        $application = new Application;
+        $application->add(new CopyTreeCommand);
 
         $command = $application->find('app:copy-tree');
         $this->commandTester = new CommandTester($command);

@@ -19,7 +19,7 @@ class OutputManager
         private bool $displayOutput,
         private ?string $outputFile
     ) {
-        $this->clipboard = new Clipboard();
+        $this->clipboard = new Clipboard;
     }
 
     public function handleOutput(array $result, SymfonyStyle $io): void
