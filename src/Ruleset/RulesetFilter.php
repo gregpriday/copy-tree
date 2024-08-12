@@ -140,6 +140,11 @@ class RulesetFilter
 
     private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
+        // Always skip images
+        if($this->isImage($file)) {
+            return false;
+        }
+
         // Check always exclude files second
         if ($this->isAlwaysExcluded($relativePath)) {
             return false;
@@ -274,6 +279,13 @@ class RulesetFilter
     private function getRelativePath(SplFileInfo $file): string
     {
         return str_replace($this->basePath.'/', '', $file->getRealPath());
+    }
+
+    private function isImage(SplFileInfo $file): bool
+    {
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico'];
+
+        return in_array(strtolower($file->getExtension()), $imageExtensions);
     }
 
     private function getMimeType(SplFileInfo $file): string
