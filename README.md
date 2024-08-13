@@ -23,13 +23,13 @@ After installation, you can quickly copy the current directory structure to your
 ctree
 ```
 
-You can get command help with 
+You can get command help with:
 
 ```bash
 ctree --help
 ```
 
-If you're in a Laravel or Sveltekit project, the automatic rules will work out the box. Otherwise you'll need to specify a custom ruleset.
+If you're in a Laravel or SvelteKit project, the automatic rules will work out of the box. Otherwise, you'll need to specify a custom ruleset.
 
 ## Documentation
 
@@ -63,30 +63,43 @@ composer require gregpriday/copy-tree
 
 ## Usage
 
-After installation, you can run the `copy-tree` command directly from your terminal. Here's how you can use the command:
+After installation, you can run the `ctree` command directly from your terminal. Here's how you can use the command:
 
 ```bash
 # Display the help information
-./vendor/bin/ctree --help
+ctree --help
 
-# Copy current directory to clipboard and optionally display the output
-./vendor/bin/ctree --display
+# Copy current directory to clipboard
+ctree
 
 # Specify a directory path
-./vendor/bin/ctree --path=/path/to/directory
+ctree /path/to/directory
 
-# Avoid copying to clipboard
-./vendor/bin/ctree --no-clipboard
-
-# Specify depth of directory tree
-./vendor/bin/ctree --depth=3
-
-# Use a specific ruleset
-./vendor/bin/ctree --ruleset=laravel
+# Display the output in the console
+ctree --display
 
 # Output to a file instead of clipboard
-./vendor/bin/ctree --output=output.txt
+ctree --output=output.txt
+
+# Use a specific ruleset
+ctree --ruleset=laravel
+
+# Include only the directory tree in the output, not the file contents
+ctree --only-tree
+
+# Filter files using a glob pattern on the relative path
+ctree --filter="*.php"
 ```
+
+### Command Arguments and Options
+
+- `path`: (Optional) The directory path to copy. If not specified, the current working directory is used.
+- `--depth`, `-d`: (Optional) Maximum depth of the tree. Default is 10.
+- `--output`, `-o`: (Optional) Outputs to a file instead of the clipboard.
+- `--display`, `-i`: Display the output in the console.
+- `--ruleset`, `-r`: Ruleset to apply. Available options include 'auto', 'laravel', 'sveltekit', and any custom rulesets. Default is 'auto'.
+- `--only-tree`, `-t`: Include only the directory tree in the output, not the file contents.
+- `--filter`, `-f`: Filter files using a glob pattern on the relative path.
 
 ### Global Installation and Usage
 
@@ -119,7 +132,7 @@ Now, you can use `ctree` from any directory:
 ctree
 
 # Copy with specific depth and display output
-ctree --path=/path/to/directory --depth=2 --display
+ctree /path/to/directory --depth=2 --display
 ```
 
 ## Ruleset System
