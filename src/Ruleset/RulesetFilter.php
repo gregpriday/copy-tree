@@ -141,7 +141,7 @@ class RulesetFilter
     private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
         // Always skip images
-        if($this->isImage($file)) {
+        if ($this->isImage($file)) {
             return false;
         }
 
