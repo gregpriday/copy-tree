@@ -37,14 +37,18 @@ class Clipboard
 
     private function runWindowsCommand(): void
     {
-        // Windows `clip` command cannot be piped directly via Process
-        // We need to use a temporary file to securely pass the data
-        $tmpFile = tmpfile();
-        fwrite($tmpFile, $this->contents);
-        $tmpPath = stream_get_meta_data($tmpFile)['uri'];
-        $process = new Process(['cmd', '/c', 'clip', '<', $tmpPath]);
+        // Create a temporary file
+        $tempFile = tempnam(sys_get_temp_dir(), 'ctree_');
+        file_put_contents($tempFile, $this->contents);
+
+        // Use PowerShell to read the file and pipe it to clip.exe
+        $command = sprintf('powershell.exe -Command "Get-Content -Path \'%s\' -Raw | Set-Clipboard"', $tempFile);
+
+        $process = Process::fromShellCommandline($command);
         $process->run();
-        fclose($tmpFile);  // Clean up the temporary file
+
+        // Clean up the temporary file
+        unlink($tempFile);
 
         if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
