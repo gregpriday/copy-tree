@@ -4,15 +4,19 @@ namespace GregPriday\CopyTree\Utilities;
 
 use InvalidArgumentException;
 use RuntimeException;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
 
 class GitHubUrlHandler
 {
     private string $repoUrl;
+
     private string $branch;
+
     private string $subPath;
+
     private string $repoDir;
+
     private string $cacheKey;
 
     /**
@@ -32,16 +36,16 @@ class GitHubUrlHandler
         // Match GitHub URL pattern
         $pattern = '#^https://github\.com/([^/]+/[^/]+)(?:/tree/([^/]+))?(?:/(.+))?$#';
 
-        if (!preg_match($pattern, $url, $matches)) {
+        if (! preg_match($pattern, $url, $matches)) {
             throw new InvalidArgumentException('Invalid GitHub URL format');
         }
 
-        $this->repoUrl = 'https://github.com/' . $matches[1] . '.git';
+        $this->repoUrl = 'https://github.com/'.$matches[1].'.git';
         $this->branch = $matches[2] ?? 'main';
         $this->subPath = $matches[3] ?? '';
 
         // Create a unique cache key for this repo/branch combination
-        $this->cacheKey = md5($matches[1] . '/' . $this->branch);
+        $this->cacheKey = md5($matches[1].'/'.$this->branch);
     }
 
     /**
@@ -51,24 +55,24 @@ class GitHubUrlHandler
     {
         // Get the system's cache directory
         if (PHP_OS_FAMILY === 'Windows') {
-            $baseDir = getenv('LOCALAPPDATA') . '/CopyTree';
+            $baseDir = getenv('LOCALAPPDATA').'/CopyTree';
         } else {
             $baseDir = getenv('XDG_CACHE_HOME');
-            if (!$baseDir) {
-                $baseDir = getenv('HOME') . '/.cache';
+            if (! $baseDir) {
+                $baseDir = getenv('HOME').'/.cache';
             }
             $baseDir .= '/copytree';
         }
 
         // Create the repos directory if it doesn't exist
-        $reposDir = $baseDir . '/repos';
-        if (!is_dir($reposDir)) {
-            if (!mkdir($reposDir, 0777, true)) {
+        $reposDir = $baseDir.'/repos';
+        if (! is_dir($reposDir)) {
+            if (! mkdir($reposDir, 0777, true)) {
                 throw new RuntimeException("Failed to create cache directory: {$reposDir}");
             }
         }
 
-        $this->repoDir = $reposDir . '/' . $this->cacheKey;
+        $this->repoDir = $reposDir.'/'.$this->cacheKey;
     }
 
     /**
@@ -78,7 +82,7 @@ class GitHubUrlHandler
     {
         $this->ensureGitIsInstalled();
 
-        if (!is_dir($this->repoDir)) {
+        if (! is_dir($this->repoDir)) {
             $this->cloneRepository();
         } else {
             $this->updateRepository();
@@ -86,9 +90,9 @@ class GitHubUrlHandler
 
         $targetPath = $this->repoDir;
         if ($this->subPath) {
-            $targetPath .= '/' . $this->subPath;
+            $targetPath .= '/'.$this->subPath;
 
-            if (!is_dir($targetPath)) {
+            if (! is_dir($targetPath)) {
                 throw new InvalidArgumentException("Specified path '{$this->subPath}' not found in repository");
             }
         }
@@ -127,7 +131,7 @@ class GitHubUrlHandler
             '--branch', $this->branch,
             '--single-branch',
             $this->repoUrl,
-            $this->repoDir
+            $this->repoDir,
         ];
 
         try {
@@ -137,7 +141,7 @@ class GitHubUrlHandler
             if (is_dir($this->repoDir)) {
                 $this->executeCommand(['rm', '-rf', $this->repoDir]);
             }
-            throw new RuntimeException('Failed to clone repository: ' . $e->getMessage());
+            throw new RuntimeException('Failed to clone repository: '.$e->getMessage());
         }
     }
 
@@ -152,11 +156,11 @@ class GitHubUrlHandler
 
             // Check if we need to update
             $behindCount = $this->executeCommand(
-                ['git', 'rev-list', 'HEAD..origin/' . $this->branch, '--count'],
+                ['git', 'rev-list', 'HEAD..origin/'.$this->branch, '--count'],
                 $this->repoDir
             );
 
-            if ((int)$behindCount->getOutput() > 0) {
+            if ((int) $behindCount->getOutput() > 0) {
                 // Reset any local changes and pull
                 $this->executeCommand(['git', 'reset', '--hard', 'HEAD'], $this->repoDir);
                 $this->executeCommand(['git', 'clean', '-fd'], $this->repoDir);
@@ -177,7 +181,7 @@ class GitHubUrlHandler
         $process = new Process($command, $cwd);
         $process->run();
 
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
         }
 
@@ -190,11 +194,11 @@ class GitHubUrlHandler
     public static function cleanCache(): void
     {
         if (PHP_OS_FAMILY === 'Windows') {
-            $cacheDir = getenv('LOCALAPPDATA') . '/CopyTree';
+            $cacheDir = getenv('LOCALAPPDATA').'/CopyTree';
         } else {
             $cacheDir = getenv('XDG_CACHE_HOME');
-            if (!$cacheDir) {
-                $cacheDir = getenv('HOME') . '/.cache';
+            if (! $cacheDir) {
+                $cacheDir = getenv('HOME').'/.cache';
             }
             $cacheDir .= '/copytree';
         }
@@ -203,7 +207,7 @@ class GitHubUrlHandler
             $process = new Process(['rm', '-rf', $cacheDir]);
             $process->run();
 
-            if (!$process->isSuccessful()) {
+            if (! $process->isSuccessful()) {
                 throw new ProcessFailedException($process);
             }
         }

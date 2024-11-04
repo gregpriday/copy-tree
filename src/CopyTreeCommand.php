@@ -44,9 +44,11 @@ class CopyTreeCommand extends Command
             try {
                 GitHubUrlHandler::cleanCache();
                 $io->success('GitHub repository cache cleared successfully');
+
                 return Command::SUCCESS;
             } catch (\Exception $e) {
                 $io->error($e->getMessage());
+
                 return Command::FAILURE;
             }
         }
@@ -66,7 +68,7 @@ class CopyTreeCommand extends Command
 
             $rulesetManager = new RulesetManager($path, $io);
 
-            if (!empty($filters)) {
+            if (! empty($filters)) {
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
@@ -99,6 +101,7 @@ class CopyTreeCommand extends Command
             }
 
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
     }
