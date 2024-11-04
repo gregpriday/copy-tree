@@ -3,6 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
+use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -10,11 +11,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-/**
- * Command to copy directory tree structure and file contents to clipboard or file.
- *
- * Allows filtering files based on rulesets, setting depth, and controlling output options.
- */
 class CopyTreeCommand extends Command
 {
     protected static string $defaultName = 'app:copy-tree';
@@ -29,27 +25,48 @@ class CopyTreeCommand extends Command
             ->setName('app:copy-tree')
             ->setDescription('Copies the directory tree to the clipboard and optionally displays it.')
             ->setHelp('This command copies the directory tree to the clipboard by default. You can also display the tree in the console or skip copying to the clipboard.')
-            ->addArgument('path', InputArgument::OPTIONAL, 'The directory path', getcwd())
+            ->addArgument('path', InputArgument::OPTIONAL, 'The directory path or GitHub URL', getcwd())
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
-            ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.');
+            ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
+            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+
+        // Handle cache clearing
+        if ($input->getOption('clear-cache')) {
+            try {
+                GitHubUrlHandler::cleanCache();
+                $io->success('GitHub repository cache cleared successfully');
+                return Command::SUCCESS;
+            } catch (\Exception $e) {
+                $io->error($e->getMessage());
+                return Command::FAILURE;
+            }
+        }
+
         $path = $input->getArgument('path') ?? getcwd();
         $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
 
         try {
+            // Handle GitHub URLs
+            $githubHandler = null;
+            if (GitHubUrlHandler::isGitHubUrl($path)) {
+                $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
+                $githubHandler = new GitHubUrlHandler($path);
+                $path = $githubHandler->getFiles();
+            }
+
             $rulesetManager = new RulesetManager($path, $io);
 
-            if (! empty($filters)) {
-                // Convert single string filter to array for backwards compatibility
+            if (!empty($filters)) {
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
@@ -70,10 +87,18 @@ class CopyTreeCommand extends Command
             $result = $executor->execute($ruleset);
             $outputManager->handleOutput($result, $io);
 
+            // Clean up temporary files if we cloned a repository
+            if ($githubHandler) {
+                $githubHandler->cleanup();
+            }
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error($e->getMessage());
+            if (isset($githubHandler)) {
+                $githubHandler->cleanup();
+            }
 
+            $io->error($e->getMessage());
             return Command::FAILURE;
         }
     }
