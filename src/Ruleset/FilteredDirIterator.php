@@ -17,6 +17,7 @@ class FilteredDirIterator extends \RecursiveDirectoryIterator
         'bower_components',
         '.npm',
         '.yarn',
+        'venv',
     ];
 
     private $isSkippedDir = false;
