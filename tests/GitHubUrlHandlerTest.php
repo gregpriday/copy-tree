@@ -3,7 +3,6 @@
 namespace GregPriday\CopyTree\Tests\Integration;
 
 use GregPriday\CopyTree\CopyTreeCommand;
-use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -11,6 +10,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 class GitHubUrlHandlerTest extends TestCase
 {
     private CommandTester $commandTester;
+
     private string $cacheDir;
 
     protected function setUp(): void
@@ -18,20 +18,20 @@ class GitHubUrlHandlerTest extends TestCase
         parent::setUp();
 
         // Set up the command tester
-        $application = new Application();
-        $application->add(new CopyTreeCommand());
+        $application = new Application;
+        $application->add(new CopyTreeCommand);
         $command = $application->find('app:copy-tree');
         $this->commandTester = new CommandTester($command);
 
         // Set up cache directory path
         if (PHP_OS_FAMILY === 'Windows') {
-            $this->cacheDir = getenv('LOCALAPPDATA') . '/CopyTree';
+            $this->cacheDir = getenv('LOCALAPPDATA').'/CopyTree';
         } else {
             $cacheDir = getenv('XDG_CACHE_HOME');
-            if (!$cacheDir) {
-                $cacheDir = getenv('HOME') . '/.cache';
+            if (! $cacheDir) {
+                $cacheDir = getenv('HOME').'/.cache';
             }
-            $this->cacheDir = $cacheDir . '/copytree';
+            $this->cacheDir = $cacheDir.'/copytree';
         }
 
         // Clean any existing cache
@@ -167,13 +167,13 @@ class GitHubUrlHandlerTest extends TestCase
 
     private function removeDirectory(string $path): void
     {
-        if (!is_dir($path)) {
+        if (! is_dir($path)) {
             return;
         }
 
         $files = array_diff(scandir($path), ['.', '..']);
         foreach ($files as $file) {
-            $filePath = $path . DIRECTORY_SEPARATOR . $file;
+            $filePath = $path.DIRECTORY_SEPARATOR.$file;
             is_dir($filePath) ? $this->removeDirectory($filePath) : unlink($filePath);
         }
         rmdir($path);
