@@ -134,13 +134,20 @@ class RulesetManager
         return array_unique($rulesets);
     }
 
+    public function createRulesetFromGlobs(array $globs): RulesetFilter
+    {
+        $rules = array_map(function($glob) {
+            return [['path', 'glob', $glob]];
+        }, $globs);
+
+        return RulesetFilter::fromArray([
+            'rules' => $rules,
+        ], $this->basePath);
+    }
+
     public function createRulesetFromGlob(string $glob): RulesetFilter
     {
-        return RulesetFilter::fromArray([
-            'rules' => [
-                [['path', 'glob', $glob]],
-            ],
-        ], $this->basePath);
+        return $this->createRulesetFromGlobs([$glob]);
     }
 
     public function createEmptyRuleset(): RulesetFilter

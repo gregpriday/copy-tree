@@ -35,21 +35,23 @@ class CopyTreeCommand extends Command
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
-            ->addOption('filter', 'f', InputOption::VALUE_OPTIONAL, 'Filter files using a glob pattern on the relative path.');
+            ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $path = $input->getArgument('path') ?? getcwd();
-        $filter = $input->getOption('filter');
+        $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
 
         try {
             $rulesetManager = new RulesetManager($path, $io);
 
-            if ($filter) {
-                $ruleset = $rulesetManager->createRulesetFromGlob($filter);
+            if (!empty($filters)) {
+                // Convert single string filter to array for backwards compatibility
+                $filters = is_array($filters) ? $filters : [$filters];
+                $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
                 $ruleset = $rulesetManager->createEmptyRuleset();
             } else {
