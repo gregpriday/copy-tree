@@ -136,7 +136,7 @@ class RulesetManager
 
     public function createRulesetFromGlobs(array $globs): RulesetFilter
     {
-        $rules = array_map(function($glob) {
+        $rules = array_map(function ($glob) {
             return [['path', 'glob', $glob]];
         }, $globs);
 

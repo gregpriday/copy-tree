@@ -48,7 +48,7 @@ class CopyTreeCommand extends Command
         try {
             $rulesetManager = new RulesetManager($path, $io);
 
-            if (!empty($filters)) {
+            if (! empty($filters)) {
                 // Convert single string filter to array for backwards compatibility
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);

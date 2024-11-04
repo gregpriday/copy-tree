@@ -5,6 +5,7 @@ namespace GregPriday\CopyTree\Tests;
 class CopyTreeCommandTest extends TestCase
 {
     private const TEST_DIR = __DIR__.'/dir';
+
     private const PROJECT_ROOT = __DIR__.'/../';
 
     protected function setUp(): void
@@ -12,7 +13,7 @@ class CopyTreeCommandTest extends TestCase
         parent::setUp();
 
         // Ensure test directory structure exists
-        if (!is_dir(self::TEST_DIR)) {
+        if (! is_dir(self::TEST_DIR)) {
             mkdir(self::TEST_DIR);
             mkdir(self::TEST_DIR.'/subfolder1');
             mkdir(self::TEST_DIR.'/subfolder2');
@@ -29,11 +30,11 @@ class CopyTreeCommandTest extends TestCase
     {
         // Clean up test directory structure
         if (is_dir(self::TEST_DIR)) {
-            array_map('unlink', glob(self::TEST_DIR."/subfolder1/*"));
-            array_map('unlink', glob(self::TEST_DIR."/subfolder2/*"));
-            @unlink(self::TEST_DIR."/test.php");
-            rmdir(self::TEST_DIR."/subfolder1");
-            rmdir(self::TEST_DIR."/subfolder2");
+            array_map('unlink', glob(self::TEST_DIR.'/subfolder1/*'));
+            array_map('unlink', glob(self::TEST_DIR.'/subfolder2/*'));
+            @unlink(self::TEST_DIR.'/test.php');
+            rmdir(self::TEST_DIR.'/subfolder1');
+            rmdir(self::TEST_DIR.'/subfolder2');
             rmdir(self::TEST_DIR);
         }
 
@@ -51,7 +52,7 @@ class CopyTreeCommandTest extends TestCase
 
         // Make sure some files were copied, without specifying an exact number
         if (preg_match('/Copied (\d+) files to clipboard/', $output, $matches)) {
-            $this->assertGreaterThan(0, (int) $matches[1], "Expected some files to be copied");
+            $this->assertGreaterThan(0, (int) $matches[1], 'Expected some files to be copied');
         } else {
             $this->fail("Could not find the number of files copied in the output: $output");
         }
@@ -75,7 +76,7 @@ class CopyTreeCommandTest extends TestCase
             'path' => self::TEST_DIR,
             '--filter' => [
                 '*/*.txt',  // Should match test1.txt and test2.txt
-                '*/*.md'    // Should match readme.md and notes.md
+                '*/*.md',    // Should match readme.md and notes.md
             ],
         ]);
 
@@ -109,8 +110,8 @@ class CopyTreeCommandTest extends TestCase
         // Make sure a reasonable number of Laravel files were copied
         if (preg_match('/Copied (\d+) files to clipboard/', $output, $matches)) {
             $numFiles = (int) $matches[1];
-            $this->assertGreaterThan(10, $numFiles, "Expected a substantial number of Laravel files to be copied");
-            $this->assertLessThan(50, $numFiles, "Unexpectedly large number of Laravel files copied");
+            $this->assertGreaterThan(10, $numFiles, 'Expected a substantial number of Laravel files to be copied');
+            $this->assertLessThan(50, $numFiles, 'Unexpectedly large number of Laravel files copied');
         } else {
             $this->fail("Could not find the number of files copied in the output: $output");
         }
@@ -142,7 +143,7 @@ class CopyTreeCommandTest extends TestCase
 
         // Make sure some files were saved, without specifying an exact number
         if (preg_match('/Saved (\d+) files to/', $output, $matches)) {
-            $this->assertGreaterThan(0, (int) $matches[1], "Expected some files to be saved");
+            $this->assertGreaterThan(0, (int) $matches[1], 'Expected some files to be saved');
         } else {
             $this->fail("Could not find the number of files saved in the output: $output");
         }
@@ -175,7 +176,7 @@ class CopyTreeCommandTest extends TestCase
     {
         // Create a temporary custom ruleset file in the project root
         $rulesetDir = self::PROJECT_ROOT.'.ctree';
-        if (!is_dir($rulesetDir)) {
+        if (! is_dir($rulesetDir)) {
             mkdir($rulesetDir);
         }
         $rulesetFile = $rulesetDir.'/test-ruleset.json';
