@@ -4,16 +4,17 @@
 [![Tests](https://img.shields.io/github/actions/workflow/status/gregpriday/copy-tree/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/gregpriday/copy-tree/actions/workflows/run-tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/gregpriday/copy-tree.svg?style=flat-square)](https://packagist.org/packages/gregpriday/copy-tree)
 
-This command line tool allows you to copy the entire structure of a directory, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews or collaborative debugging sessions.
+This command line tool allows you to copy the entire structure of a directory or GitHub repository, including file contents, to your clipboard. This is particularly useful for quickly sharing the contents and structure of your files in a readable format, such as during code reviews, collaborative debugging sessions, or when working with AI assistants.
 
 ## Features
 
-- Copy directory structure and file contents to clipboard, ready to paste into chatbots like [Claude](https://claude.ai/) or [ChatGPT](https://chatgpt.com/).
-- Flexible ruleset system for including/excluding files.
-- Support for multiple rulesets to target different parts of your project.
-- Support for custom, predefined, and auto-detected rulesets.
-- Output to clipboard, console, or file.
-- Cross-platform support (Linux, macOS, Windows).
+- Copy directory structure and file contents to clipboard, ready to paste into chatbots like [Claude](https://claude.ai/) or [ChatGPT](https://chatgpt.com/)
+- Support for copying directly from GitHub repositories using URLs
+- Flexible ruleset system for including/excluding files
+- Support for multiple rulesets to target different parts of your project
+- Support for custom, predefined, and auto-detected rulesets
+- Output to clipboard, console, or file
+- Cross-platform support (Linux, macOS, Windows)
 
 ## Quick Start
 
@@ -21,6 +22,12 @@ After installation, you can quickly copy the current directory structure to your
 
 ```bash
 ctree
+```
+
+Or copy from a GitHub repository:
+
+```bash
+ctree https://github.com/username/repo/tree/main/src
 ```
 
 You can get command help with:
@@ -35,23 +42,24 @@ If you're in a Laravel or SvelteKit project, the automatic rules will work out o
 
 For more detailed information on using Ctree, please refer to the following documentation:
 
-- [Ruleset Examples](docs/examples.md): Various examples of rulesets for different project types.
-- [Writing Rulesets](docs/rulesets.md): Detailed guide on how to write and structure rulesets.
-- [Fields and Operations Reference](docs/fields-and-operations.md): Complete list of available fields and operations for rulesets.
-- [Using Multiple Rulesets](docs/multiple-rulesets.md): Guide on using multiple rulesets in a single project.
+- [Ruleset Examples](docs/examples.md): Various examples of rulesets for different project types
+- [Writing Rulesets](docs/rulesets.md): Detailed guide on how to write and structure rulesets
+- [Fields and Operations Reference](docs/fields-and-operations.md): Complete list of available fields and operations for rulesets
+- [Using Multiple Rulesets](docs/multiple-rulesets.md): Guide on using multiple rulesets in a single project
 
 For a quick overview of the ruleset system, see the [Ruleset System](#ruleset-system) section below.
 
 ## Prerequisites
 
-Before installing and using `copy-tree`, make sure to have the necessary clipboard utilities installed on your system:
+Before installing and using `copy-tree`, make sure to have the necessary utilities installed on your system:
 
-- **Linux**: Install `xclip` which is used by the tool to access the clipboard.
+- **Git**: Required for GitHub repository support
+- **Linux**: Install `xclip` which is used by the tool to access the clipboard
   ```bash
   sudo apt-get update && sudo apt-get install -y xclip
   ```
-- **macOS**: macOS comes with `pbcopy` preinstalled, so no additional installation is necessary.
-- **Windows**: Windows has the `clip` command available by default, so no additional installation is required.
+- **macOS**: macOS comes with `pbcopy` preinstalled, so no additional installation is necessary
+- **Windows**: Windows has the `clip` command available by default, so no additional installation is required
 
 ## Installation
 
@@ -72,7 +80,13 @@ ctree --help
 # Copy current directory to clipboard
 ctree
 
-# Specify a directory path
+# Copy from a GitHub repository
+ctree https://github.com/username/repo/tree/main/src
+
+# Clear GitHub repository cache
+ctree --clear-cache
+
+# Specify a local directory path
 ctree /path/to/directory
 
 # Display the output in the console
@@ -93,13 +107,39 @@ ctree --filter="*.php"
 
 ### Command Arguments and Options
 
-- `path`: (Optional) The directory path to copy. If not specified, the current working directory is used.
-- `--depth`, `-d`: (Optional) Maximum depth of the tree. Default is 10.
-- `--output`, `-o`: (Optional) Outputs to a file instead of the clipboard.
-- `--display`, `-i`: Display the output in the console.
-- `--ruleset`, `-r`: Ruleset to apply. Available options include 'auto', 'laravel', 'sveltekit', and any custom rulesets. Default is 'auto'.
-- `--only-tree`, `-t`: Include only the directory tree in the output, not the file contents.
-- `--filter`, `-f`: Filter files using a glob pattern on the relative path.
+- `path`: (Optional) The directory path or GitHub URL to copy. If not specified, the current working directory is used
+- `--depth`, `-d`: (Optional) Maximum depth of the tree. Default is 10
+- `--output`, `-o`: (Optional) Outputs to a file instead of the clipboard
+- `--display`, `-i`: Display the output in the console
+- `--ruleset`, `-r`: Ruleset to apply. Available options include 'auto', 'laravel', 'sveltekit', and any custom rulesets. Default is 'auto'
+- `--only-tree`, `-t`: Include only the directory tree in the output, not the file contents
+- `--filter`, `-f`: Filter files using a glob pattern on the relative path
+- `--clear-cache`: Clear the GitHub repository cache
+
+### GitHub Repository Support
+
+Ctree can copy files directly from GitHub repositories using URLs. The supported URL format is:
+
+```
+https://github.com/username/repository/tree/branch/path
+```
+
+Examples:
+```bash
+# Copy the entire repository
+ctree https://github.com/username/repo
+
+# Copy a specific branch
+ctree https://github.com/username/repo/tree/develop
+
+# Copy a specific directory
+ctree https://github.com/username/repo/tree/main/src
+
+# Clear the repository cache
+ctree --clear-cache
+```
+
+The tool maintains a local cache of cloned repositories to improve performance. Use the `--clear-cache` option to remove all cached repositories.
 
 ### Global Installation and Usage
 
