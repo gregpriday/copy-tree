@@ -1,7 +1,7 @@
 {
     "rules": [
         [
-            ["folder", "startsWithAny", ["app", "database/migrations", "database/factories", "resources/views", "routes", "tests"]],
+            ["folder", "startsWithAny", ["app", "database/migrations", "database/factories", "routes", "tests"]],
             ["extension", "oneOf", ["php", "blade.php"]]
         ]
     ],
