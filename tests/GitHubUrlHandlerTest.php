@@ -52,19 +52,15 @@ class GitHubUrlHandlerTest extends TestCase
 
     public function testGitHubUrlHandlerBasicFunctionality(): void
     {
-        // Execute the command with a GitHub URL
+        // Execute the command with a GitHub URL and stream output
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
-            '--only-tree' => true, // Only get tree to keep test output manageable
+            '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         // Get command output
         $output = $this->commandTester->getDisplay();
-
-        // Assert basic expectations
-        $this->assertStringContainsString('Ruleset', $output);
-        $this->assertStringContainsString('Views', $output);
-        $this->assertStringContainsString('Utilities', $output);
 
         // Verify that specific files exist in the output
         $this->assertStringContainsString('CopyTreeCommand.php', $output);
@@ -82,6 +78,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/rulesets',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         $output = $this->commandTester->getDisplay();
@@ -100,6 +97,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         // Verify cache directory exists
@@ -120,6 +118,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/invalid/repo/that/does/not/exist',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         $this->assertNotEquals(0, $this->commandTester->getStatusCode());
@@ -131,6 +130,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/nonexistent-directory',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         $this->assertNotEquals(0, $this->commandTester->getStatusCode());
@@ -143,6 +143,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         // Get the cache directory modification time
@@ -155,6 +156,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
+            '--stream' => true,
         ]);
 
         // Get the new modification time

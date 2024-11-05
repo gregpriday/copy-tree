@@ -32,6 +32,7 @@ class CopyTreeCommand extends Command
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
+            ->addOption('stream', 's', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
@@ -93,7 +94,8 @@ class CopyTreeCommand extends Command
             // Handle output
             $outputManager = new OutputManager(
                 $input->getOption('display'),
-                $input->getOption('output')
+                $input->getOption('output'),
+                $input->getOption('stream')
             );
 
             $outputManager->handleOutput($result, $io);
@@ -115,14 +117,5 @@ class CopyTreeCommand extends Command
 
             return Command::FAILURE;
         }
-    }
-
-    private function getWorkspace(string $workspaceName, RulesetManager $rulesetManager): ?array
-    {
-        if (! $rulesetManager->workspaceExists($workspaceName)) {
-            throw new \InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspaceName));
-        }
-
-        return $rulesetManager->getWorkspace($workspaceName);
     }
 }
