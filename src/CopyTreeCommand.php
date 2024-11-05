@@ -37,6 +37,7 @@ class CopyTreeCommand extends Command
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Do not use or keep cached GitHub repositories.')
             ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription);
     }
 
@@ -62,6 +63,7 @@ class CopyTreeCommand extends Command
         $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
         $workspace = $input->getOption('workspace');
+        $noCache = $input->getOption('no-cache');
 
         try {
             // Handle GitHub URLs
@@ -100,16 +102,17 @@ class CopyTreeCommand extends Command
 
             $outputManager->handleOutput($result, $io);
 
-            // Clean up temporary files if we cloned a repository
-            if ($githubHandler) {
+            // Only clean up if --no-cache option is set
+            if ($githubHandler && $noCache) {
                 $githubHandler->cleanup();
+                $io->writeln('Cleaned up temporary repository files', OutputInterface::VERBOSITY_VERBOSE);
             }
 
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            // Clean up if there was an error
-            if (isset($githubHandler)) {
+            // Clean up if there was an error and --no-cache was set
+            if (isset($githubHandler) && $noCache) {
                 $githubHandler->cleanup();
             }
 
