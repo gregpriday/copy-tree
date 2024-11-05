@@ -55,11 +55,11 @@ class CopyTreeCommandTest extends TestCase
                 'test-workspace' => [
                     'rules' => [
                         [
-                            ['folder', 'startsWith', 'subfolder1']
-                        ]
-                    ]
-                ]
-            ]
+                            ['folder', 'startsWith', 'subfolder1'],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         file_put_contents($workspaceFile, $workspaceContent);
@@ -93,11 +93,11 @@ class CopyTreeCommandTest extends TestCase
                 'test-workspace' => [
                     'rules' => [
                         [
-                            ['extension', '=', 'txt']
-                        ]
-                    ]
-                ]
-            ]
+                            ['extension', '=', 'txt'],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         file_put_contents($workspaceFile, $workspaceContent);

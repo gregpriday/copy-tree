@@ -7,6 +7,7 @@ use InvalidArgumentException;
 class WorkspaceManager
 {
     private string $basePath;
+
     private array $workspaces = [];
 
     public function __construct(string $basePath)
@@ -17,7 +18,7 @@ class WorkspaceManager
 
     private function loadWorkspaces(): void
     {
-        $projectConfig = $this->basePath . '/.ctree/workspaces.json';
+        $projectConfig = $this->basePath.'/.ctree/workspaces.json';
         if (file_exists($projectConfig)) {
             $this->loadWorkspaceFile($projectConfig);
         }
@@ -29,7 +30,7 @@ class WorkspaceManager
         $data = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidArgumentException('Invalid workspace configuration: ' . json_last_error_msg());
+            throw new InvalidArgumentException('Invalid workspace configuration: '.json_last_error_msg());
         }
 
         if (isset($data['workspaces']) && is_array($data['workspaces'])) {

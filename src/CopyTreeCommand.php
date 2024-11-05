@@ -21,8 +21,8 @@ class CopyTreeCommand extends Command
         $rulesetNames = $rulesetManager->getAvailableRulesets();
         $workspaceNames = $rulesetManager->getAvailableWorkspaces();
 
-        $rulesetDescription = 'Ruleset to apply. Available options: ' . implode(', ', $rulesetNames) . '. Default: auto';
-        $workspaceDescription = 'Workspace to use. Available options: ' . implode(', ', $workspaceNames);
+        $rulesetDescription = 'Ruleset to apply. Available options: '.implode(', ', $rulesetNames).'. Default: auto';
+        $workspaceDescription = 'Workspace to use. Available options: '.implode(', ', $workspaceNames);
 
         $this
             ->setName('app:copy-tree')
@@ -48,9 +48,11 @@ class CopyTreeCommand extends Command
             try {
                 GitHubUrlHandler::cleanCache();
                 $io->success('GitHub repository cache cleared successfully');
+
                 return Command::SUCCESS;
             } catch (\Exception $e) {
                 $io->error($e->getMessage());
+
                 return Command::FAILURE;
             }
         }
@@ -72,7 +74,7 @@ class CopyTreeCommand extends Command
             $rulesetManager = new RulesetManager($path, $io);
 
             // Determine which ruleset to use
-            if (!empty($filters)) {
+            if (! empty($filters)) {
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
@@ -110,13 +112,14 @@ class CopyTreeCommand extends Command
             }
 
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
     }
 
     private function getWorkspace(string $workspaceName, RulesetManager $rulesetManager): ?array
     {
-        if (!$rulesetManager->workspaceExists($workspaceName)) {
+        if (! $rulesetManager->workspaceExists($workspaceName)) {
             throw new \InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspaceName));
         }
 

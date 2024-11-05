@@ -14,8 +14,8 @@ class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         // Define PROJECT_ROOT constant if not already defined
-        if (!defined('PROJECT_ROOT')) {
-            define('PROJECT_ROOT', realpath(__DIR__ . '/..'));
+        if (! defined('PROJECT_ROOT')) {
+            define('PROJECT_ROOT', realpath(__DIR__.'/..'));
         }
 
         $application = new Application;

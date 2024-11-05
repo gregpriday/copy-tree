@@ -2,8 +2,8 @@
 
 namespace GregPriday\CopyTree\Workspace;
 
-use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Ruleset\RulesetManager;
 
 class WorkspaceResolver
 {

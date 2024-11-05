@@ -13,8 +13,8 @@ class WorkspaceManagerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testDir = sys_get_temp_dir() . '/workspace_test_' . uniqid();
-        mkdir($this->testDir . '/.ctree', 0777, true);
+        $this->testDir = sys_get_temp_dir().'/workspace_test_'.uniqid();
+        mkdir($this->testDir.'/.ctree', 0777, true);
     }
 
     protected function tearDown(): void
@@ -31,15 +31,15 @@ class WorkspaceManagerTest extends TestCase
                     'extends' => 'sveltekit',
                     'rules' => [
                         [
-                            ['folder', 'startsWith', 'src/components']
-                        ]
-                    ]
-                ]
-            ]
+                            ['folder', 'startsWith', 'src/components'],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         file_put_contents(
-            $this->testDir . '/.ctree/workspaces.json',
+            $this->testDir.'/.ctree/workspaces.json',
             json_encode($config)
         );
 
@@ -53,7 +53,7 @@ class WorkspaceManagerTest extends TestCase
     public function testLoadInvalidWorkspaceConfiguration(): void
     {
         file_put_contents(
-            $this->testDir . '/.ctree/workspaces.json',
+            $this->testDir.'/.ctree/workspaces.json',
             'invalid json'
         );
 
@@ -72,13 +72,13 @@ class WorkspaceManagerTest extends TestCase
 
     private function removeDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
-            $path = $dir . '/' . $file;
+            $path = $dir.'/'.$file;
             is_dir($path) ? $this->removeDirectory($path) : unlink($path);
         }
         rmdir($dir);

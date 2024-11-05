@@ -2,8 +2,8 @@
 
 namespace GregPriday\CopyTree\Tests\Ruleset;
 
-use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
 use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -11,14 +11,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class RulesetManagerTest extends TestCase
 {
     private string $testDir;
+
     private RulesetManager $manager;
+
     private ?SymfonyStyle $io;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testDir = sys_get_temp_dir() . '/ruleset_test_' . uniqid();
-        mkdir($this->testDir . '/.ctree', 0777, true);
+        $this->testDir = sys_get_temp_dir().'/ruleset_test_'.uniqid();
+        mkdir($this->testDir.'/.ctree', 0777, true);
         $this->io = $this->createMock(SymfonyStyle::class);
         $this->manager = new RulesetManager($this->testDir, $this->io);
     }
@@ -35,14 +37,14 @@ class RulesetManagerTest extends TestCase
             'workspaces' => [
                 'test' => [
                     'rules' => [
-                        [['path', 'startsWith', 'src']]
-                    ]
-                ]
-            ]
+                        [['path', 'startsWith', 'src']],
+                    ],
+                ],
+            ],
         ];
 
         file_put_contents(
-            $this->testDir . '/.ctree/workspaces.json',
+            $this->testDir.'/.ctree/workspaces.json',
             json_encode($workspaceConfig)
         );
 
@@ -78,12 +80,12 @@ class RulesetManagerTest extends TestCase
     {
         $customRuleset = [
             'rules' => [
-                [['path', 'startsWith', 'src']]
-            ]
+                [['path', 'startsWith', 'src']],
+            ],
         ];
 
         file_put_contents(
-            $this->testDir . '/.ctree/custom.json',
+            $this->testDir.'/.ctree/custom.json',
             json_encode($customRuleset)
         );
 
@@ -106,13 +108,13 @@ class RulesetManagerTest extends TestCase
 
     private function removeDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
-            $path = $dir . '/' . $file;
+            $path = $dir.'/'.$file;
             is_dir($path) ? $this->removeDirectory($path) : unlink($path);
         }
         rmdir($dir);

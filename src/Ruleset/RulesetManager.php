@@ -15,6 +15,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class RulesetManager
 {
     public readonly WorkspaceManager $workspaceManager;
+
     public readonly WorkspaceResolver $workspaceResolver;
 
     public function __construct(
@@ -29,7 +30,7 @@ class RulesetManager
     {
         // Check for workspace first
         if ($workspace !== null) {
-            if (!$this->workspaceManager->hasWorkspace($workspace)) {
+            if (! $this->workspaceManager->hasWorkspace($workspace)) {
                 throw new InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspace));
             }
 
@@ -45,6 +46,7 @@ class RulesetManager
             if ($this->io) {
                 $this->io->writeln('Using no ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
             }
+
             return $this->createEmptyRuleset();
         }
 
@@ -169,6 +171,7 @@ class RulesetManager
     private function getPredefinedRulesetPath(string $rulesetName): ?string
     {
         $rulesetPath = realpath(PROJECT_ROOT.'/rulesets/'.$rulesetName.'.json');
+
         return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
     }
 
@@ -180,6 +183,7 @@ class RulesetManager
     private function guessRuleset(): string
     {
         $guesser = new RulesetGuesser($this->basePath, $this->getAvailableRulesets());
+
         return $guesser->guess();
     }
 }

@@ -2,14 +2,15 @@
 
 namespace GregPriday\CopyTree\Tests\Workspace;
 
+use GregPriday\CopyTree\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
 use GregPriday\CopyTree\Workspace\WorkspaceResolver;
-use GregPriday\CopyTree\Ruleset\RulesetManager;
-use GregPriday\CopyTree\Ruleset\RulesetFilter;
 
 class WorkspaceResolverTest extends TestCase
 {
     private WorkspaceResolver $resolver;
+
     private RulesetManager $rulesetManager;
 
     protected function setUp(): void
@@ -34,9 +35,9 @@ class WorkspaceResolverTest extends TestCase
             'extends' => 'sveltekit',
             'rules' => [
                 [
-                    ['folder', 'startsWith', 'src/components']
-                ]
-            ]
+                    ['folder', 'startsWith', 'src/components'],
+                ],
+            ],
         ];
 
         $result = $this->resolver->resolveWorkspace($workspace);
@@ -54,9 +55,9 @@ class WorkspaceResolverTest extends TestCase
         $workspace = [
             'rules' => [
                 [
-                    ['folder', 'startsWith', 'src/components']
-                ]
-            ]
+                    ['folder', 'startsWith', 'src/components'],
+                ],
+            ],
         ];
 
         $result = $this->resolver->resolveWorkspace($workspace);
