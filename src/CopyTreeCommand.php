@@ -4,6 +4,7 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
+use GregPriday\CopyTree\Workspace\WorkspaceFormatter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,7 +20,10 @@ class CopyTreeCommand extends Command
     {
         $rulesetManager = new RulesetManager(getcwd());
         $rulesetNames = $rulesetManager->getAvailableRulesets();
-        $rulesetDescription = 'Ruleset to apply. Available options: '.implode(', ', $rulesetNames).'. Default: auto';
+        $workspaceNames = $rulesetManager->getAvailableWorkspaces();
+
+        $rulesetDescription = 'Ruleset to apply. Available options: ' . implode(', ', $rulesetNames) . '. Default: auto';
+        $workspaceDescription = 'Workspace to use. Available options: ' . implode(', ', $workspaceNames);
 
         $this
             ->setName('app:copy-tree')
@@ -32,7 +36,9 @@ class CopyTreeCommand extends Command
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
-            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.');
+            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
+            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
+            ->addOption('format', null, InputOption::VALUE_OPTIONAL, 'Output format (standard, claude, gpt)', 'standard');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,11 +50,9 @@ class CopyTreeCommand extends Command
             try {
                 GitHubUrlHandler::cleanCache();
                 $io->success('GitHub repository cache cleared successfully');
-
                 return Command::SUCCESS;
             } catch (\Exception $e) {
                 $io->error($e->getMessage());
-
                 return Command::FAILURE;
             }
         }
@@ -56,6 +60,7 @@ class CopyTreeCommand extends Command
         $path = $input->getArgument('path') ?? getcwd();
         $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
+        $workspace = $input->getOption('workspace');
 
         try {
             // Handle GitHub URLs
@@ -68,25 +73,41 @@ class CopyTreeCommand extends Command
 
             $rulesetManager = new RulesetManager($path, $io);
 
-            if (! empty($filters)) {
+            // Determine which ruleset to use
+            if (!empty($filters)) {
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
                 $ruleset = $rulesetManager->createEmptyRuleset();
             } else {
-                $ruleset = $rulesetManager->getRuleset($rulesetOption);
+                $ruleset = $rulesetManager->getRuleset($rulesetOption, $workspace);
             }
 
+            // Execute the copy tree operation
             $executor = new CopyTreeExecutor(
-                $input->getOption('only-tree'),
+                $input->getOption('only-tree')
             );
 
+            $result = $executor->execute($ruleset);
+
+            // Apply formatting if specified in workspace or command
+            $format = $input->getOption('format');
+            if ($workspace) {
+                $workspaceConfig = $rulesetManager->getWorkspace($workspace);
+                $format = $workspaceConfig['format'] ?? $format;
+            }
+
+            if ($format !== 'standard') {
+                $formatter = new WorkspaceFormatter();
+                $result['output'] = $formatter->formatOutput($result['output'], $format);
+            }
+
+            // Handle output
             $outputManager = new OutputManager(
                 $input->getOption('display'),
                 $input->getOption('output')
             );
 
-            $result = $executor->execute($ruleset);
             $outputManager->handleOutput($result, $io);
 
             // Clean up temporary files if we cloned a repository
@@ -95,14 +116,24 @@ class CopyTreeCommand extends Command
             }
 
             return Command::SUCCESS;
+
         } catch (\Exception $e) {
+            // Clean up if there was an error
             if (isset($githubHandler)) {
                 $githubHandler->cleanup();
             }
 
             $io->error($e->getMessage());
-
             return Command::FAILURE;
         }
+    }
+
+    private function getWorkspace(string $workspaceName, RulesetManager $rulesetManager): ?array
+    {
+        if (!$rulesetManager->workspaceExists($workspaceName)) {
+            throw new \InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspaceName));
+        }
+
+        return $rulesetManager->getWorkspace($workspaceName);
     }
 }
