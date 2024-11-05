@@ -1,0 +1,92 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "rules": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": [
+                        {
+                            "type": "string",
+                            "enum": ["folder", "path", "dirname", "basename", "extension", "filename", "contents", "contents_slice", "size", "mtime", "mimeType"]
+                        },
+                        {
+                            "type": "string",
+                            "enum": [">", ">=", "<", "<=", "=", "!=", "oneOf", "regex", "glob", "fnmatch", "contains", "startsWith", "endsWith", "length", "isAscii", "isJson", "isUlid", "isUrl", "isUuid"]
+                        },
+                        {
+                            "anyOf": [
+                                { "type": "string" },
+                                { "type": "number" },
+                                { "type": "array", "items": { "type": "string" } }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "globalExcludeRules": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": [
+                    {
+                        "type": "string",
+                        "enum": ["folder", "path", "dirname", "basename", "extension", "filename", "contents", "contents_slice", "size", "mtime", "mimeType"]
+                    },
+                    {
+                        "type": "string",
+                        "enum": [">", ">=", "<", "<=", "=", "!=", "oneOf", "regex", "glob", "fnmatch", "contains", "startsWith", "endsWith", "length", "isAscii", "isJson", "isUlid", "isUrl", "isUuid"]
+                    },
+                    {
+                        "anyOf": [
+                            { "type": "string" },
+                            { "type": "number" },
+                            { "type": "array", "items": { "type": "string" } }
+                        ]
+                    }
+                ]
+            }
+        },
+        "always": {
+            "type": "object",
+            "properties": {
+                "include": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                },
+                "exclude": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                }
+            }
+        },
+        "workspaces": {
+            "type": "object",
+            "patternProperties": {
+                "^[a-zA-Z0-9-_]+$": {
+                    "type": "object",
+                    "properties": {
+                        "rules": { "$ref": "#/properties/rules" },
+                        "globalExcludeRules": { "$ref": "#/properties/globalExcludeRules" },
+                        "always": { "$ref": "#/properties/always" },
+                        "extends": {
+                            "type": "string",
+                            "description": "Name of another ruleset to extend"
+                        },
+                        "description": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

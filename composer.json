@@ -23,8 +23,8 @@
         "symfony/process": "^6.0|^7.0"
     },
     "require-dev": {
+        "laravel/laravel": "^11.3",
         "laravel/pint": "^1.0",
-        "laravel/laravel": "^11.15",
         "phpunit/phpunit": "^10.5",
         "spatie/ray": "^1.28",
         "symfony/phpunit-bridge": "^6.0|^7.0"

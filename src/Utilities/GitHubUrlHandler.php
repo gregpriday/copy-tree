@@ -212,4 +212,19 @@ class GitHubUrlHandler
             }
         }
     }
+
+    /**
+     * Clean up this specific repository
+     */
+    public function cleanup(): void
+    {
+        if (is_dir($this->repoDir)) {
+            $process = new Process(['rm', '-rf', $this->repoDir]);
+            $process->run();
+
+            if (! $process->isSuccessful()) {
+                throw new ProcessFailedException($process);
+            }
+        }
+    }
 }

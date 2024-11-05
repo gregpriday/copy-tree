@@ -19,7 +19,10 @@ class CopyTreeCommand extends Command
     {
         $rulesetManager = new RulesetManager(getcwd());
         $rulesetNames = $rulesetManager->getAvailableRulesets();
+        $workspaceNames = $rulesetManager->getAvailableWorkspaces();
+
         $rulesetDescription = 'Ruleset to apply. Available options: '.implode(', ', $rulesetNames).'. Default: auto';
+        $workspaceDescription = 'Workspace to use. Available options: '.implode(', ', $workspaceNames);
 
         $this
             ->setName('app:copy-tree')
@@ -29,10 +32,12 @@ class CopyTreeCommand extends Command
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
+            ->addOption('stream', 's', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
-            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.');
+            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
+            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -56,6 +61,7 @@ class CopyTreeCommand extends Command
         $path = $input->getArgument('path') ?? getcwd();
         $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
+        $workspace = $input->getOption('workspace');
 
         try {
             // Handle GitHub URLs
@@ -68,25 +74,30 @@ class CopyTreeCommand extends Command
 
             $rulesetManager = new RulesetManager($path, $io);
 
+            // Determine which ruleset to use
             if (! empty($filters)) {
                 $filters = is_array($filters) ? $filters : [$filters];
                 $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
             } elseif ($rulesetOption === 'none') {
                 $ruleset = $rulesetManager->createEmptyRuleset();
             } else {
-                $ruleset = $rulesetManager->getRuleset($rulesetOption);
+                $ruleset = $rulesetManager->getRuleset($rulesetOption, $workspace);
             }
 
+            // Execute the copy tree operation
             $executor = new CopyTreeExecutor(
-                $input->getOption('only-tree'),
-            );
-
-            $outputManager = new OutputManager(
-                $input->getOption('display'),
-                $input->getOption('output')
+                $input->getOption('only-tree')
             );
 
             $result = $executor->execute($ruleset);
+
+            // Handle output
+            $outputManager = new OutputManager(
+                $input->getOption('display'),
+                $input->getOption('output'),
+                $input->getOption('stream')
+            );
+
             $outputManager->handleOutput($result, $io);
 
             // Clean up temporary files if we cloned a repository
@@ -95,7 +106,9 @@ class CopyTreeCommand extends Command
             }
 
             return Command::SUCCESS;
+
         } catch (\Exception $e) {
+            // Clean up if there was an error
             if (isset($githubHandler)) {
                 $githubHandler->cleanup();
             }

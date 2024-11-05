@@ -2,6 +2,9 @@
 
 namespace GregPriday\CopyTree\Ruleset;
 
+use GregPriday\CopyTree\Workspace\WorkspaceManager;
+use GregPriday\CopyTree\Workspace\WorkspaceResolver;
+use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -11,18 +14,34 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 class RulesetManager
 {
-    private string $basePath;
+    public readonly WorkspaceManager $workspaceManager;
 
-    private ?SymfonyStyle $io;
+    public readonly WorkspaceResolver $workspaceResolver;
 
-    public function __construct(string $basePath, ?SymfonyStyle $io = null)
-    {
-        $this->basePath = $basePath;
-        $this->io = $io;
+    public function __construct(
+        private string $basePath,
+        private ?SymfonyStyle $io = null
+    ) {
+        $this->workspaceManager = new WorkspaceManager($basePath);
+        $this->workspaceResolver = new WorkspaceResolver($this);
     }
 
-    public function getRuleset(string $rulesetOption): RulesetFilter
+    public function getRuleset(string $rulesetOption, ?string $workspace = null): RulesetFilter
     {
+        // Check for workspace first
+        if ($workspace !== null) {
+            if (! $this->workspaceManager->hasWorkspace($workspace)) {
+                throw new InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspace));
+            }
+
+            $workspaceConfig = $this->workspaceManager->getWorkspace($workspace);
+            if ($this->io) {
+                $this->io->writeln(sprintf('Using workspace: %s', $workspace), SymfonyStyle::VERBOSITY_VERBOSE);
+            }
+
+            return $this->workspaceResolver->resolveWorkspace($workspaceConfig);
+        }
+
         if ($rulesetOption === 'none') {
             if ($this->io) {
                 $this->io->writeln('Using no ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
@@ -30,6 +49,7 @@ class RulesetManager
 
             return $this->createEmptyRuleset();
         }
+
         if ($rulesetOption !== 'auto') {
             // Look for custom ruleset in project directory
             $customRulesetPath = $this->basePath.'/.ctree/'.$rulesetOption.'.json';
@@ -52,7 +72,7 @@ class RulesetManager
             }
 
             // If ruleset is not found, throw an error
-            throw new \InvalidArgumentException(sprintf('Ruleset "%s" not found.', $rulesetOption));
+            throw new InvalidArgumentException(sprintf('Ruleset "%s" not found.', $rulesetOption));
         }
 
         // Check for custom default ruleset
@@ -87,25 +107,6 @@ class RulesetManager
         return RulesetFilter::fromJson(file_get_contents($defaultRulesetPath), $this->basePath);
     }
 
-    private function getPredefinedRulesetPath(string $rulesetName): ?string
-    {
-        $rulesetPath = realpath(PROJECT_ROOT.'/rulesets/'.$rulesetName.'.json');
-
-        return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
-    }
-
-    private function getDefaultRulesetPath(): string
-    {
-        return realpath(PROJECT_ROOT.'/rulesets/default.json');
-    }
-
-    private function guessRuleset(): string
-    {
-        $guesser = new RulesetGuesser($this->basePath, $this->getAvailableRulesets());
-
-        return $guesser->guess();
-    }
-
     public function getAvailableRulesets(): array
     {
         // Get predefined rulesets
@@ -134,6 +135,11 @@ class RulesetManager
         return array_unique($rulesets);
     }
 
+    public function getAvailableWorkspaces(): array
+    {
+        return $this->workspaceManager->getAvailableWorkspaces();
+    }
+
     public function createRulesetFromGlobs(array $globs): RulesetFilter
     {
         $rules = array_map(function ($glob) {
@@ -160,5 +166,24 @@ class RulesetManager
                 'exclude' => [],
             ],
         ], $this->basePath);
+    }
+
+    private function getPredefinedRulesetPath(string $rulesetName): ?string
+    {
+        $rulesetPath = realpath(PROJECT_ROOT.'/rulesets/'.$rulesetName.'.json');
+
+        return $rulesetPath && file_exists($rulesetPath) ? $rulesetPath : null;
+    }
+
+    private function getDefaultRulesetPath(): string
+    {
+        return realpath(PROJECT_ROOT.'/rulesets/default.json');
+    }
+
+    private function guessRuleset(): string
+    {
+        $guesser = new RulesetGuesser($this->basePath, $this->getAvailableRulesets());
+
+        return $guesser->guess();
     }
 }
