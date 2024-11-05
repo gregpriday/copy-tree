@@ -4,7 +4,6 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
-use GregPriday\CopyTree\Workspace\WorkspaceFormatter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,8 +36,7 @@ class CopyTreeCommand extends Command
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
-            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
-            ->addOption('format', null, InputOption::VALUE_OPTIONAL, 'Output format (standard, claude, gpt)', 'standard');
+            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -89,18 +87,6 @@ class CopyTreeCommand extends Command
             );
 
             $result = $executor->execute($ruleset);
-
-            // Apply formatting if specified in workspace or command
-            $format = $input->getOption('format');
-            if ($workspace) {
-                $workspaceConfig = $rulesetManager->getWorkspace($workspace);
-                $format = $workspaceConfig['format'] ?? $format;
-            }
-
-            if ($format !== 'standard') {
-                $formatter = new WorkspaceFormatter();
-                $result['output'] = $formatter->formatOutput($result['output'], $format);
-            }
 
             // Handle output
             $outputManager = new OutputManager(

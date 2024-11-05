@@ -14,8 +14,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 class RulesetManager
 {
-    private WorkspaceManager $workspaceManager;
-    private WorkspaceResolver $workspaceResolver;
+    public readonly WorkspaceManager $workspaceManager;
+    public readonly WorkspaceResolver $workspaceResolver;
 
     public function __construct(
         private string $basePath,

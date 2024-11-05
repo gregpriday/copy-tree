@@ -81,11 +81,6 @@
                             "type": "string",
                             "description": "Name of another ruleset to extend"
                         },
-                        "format": {
-                            "type": "string",
-                            "enum": ["standard", "claude", "gpt"],
-                            "default": "standard"
-                        },
                         "description": {
                             "type": "string"
                         }

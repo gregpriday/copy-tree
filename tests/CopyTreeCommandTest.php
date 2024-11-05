@@ -41,8 +41,6 @@ class CopyTreeCommandTest extends TestCase
         parent::tearDown();
     }
 
-    // [All existing test methods remain exactly the same...]
-
     public function testExecuteWithWorkspace(): void
     {
         // Create a temporary workspace configuration
@@ -59,8 +57,7 @@ class CopyTreeCommandTest extends TestCase
                         [
                             ['folder', 'startsWith', 'subfolder1']
                         ]
-                    ],
-                    'format' => 'claude'
+                    ]
                 ]
             ]
         ]);
@@ -74,7 +71,6 @@ class CopyTreeCommandTest extends TestCase
         ]);
 
         $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('<document>', $output);
         $this->assertStringContainsString('subfolder1', $output);
         $this->assertStringNotContainsString('subfolder2', $output);
 
