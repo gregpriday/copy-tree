@@ -4,7 +4,6 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
-use GregPriday\CopyTree\Utilities\OpenAIFileFilter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -37,7 +36,7 @@ class CopyTreeCommand extends Command
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
-            ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description')
+            ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
             ->addOption('as-reference', 'p', InputOption::VALUE_NONE, 'Copy a reference to a temporary file instead of copying the content directly.')
             ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
             ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Do not use or keep cached GitHub repositories.')
@@ -67,7 +66,6 @@ class CopyTreeCommand extends Command
         $rulesetOption = $input->getOption('ruleset');
         $workspace = $input->getOption('workspace');
         $noCache = $input->getOption('no-cache');
-        $aiFilter = $input->getOption('ai-filter');
 
         try {
             // Handle GitHub URLs
@@ -90,38 +88,27 @@ class CopyTreeCommand extends Command
                 $ruleset = $rulesetManager->getRuleset($rulesetOption, $workspace);
             }
 
-            // Execute the copy tree operation
+            // Get AI filter description if requested
+            $aiFilterDescription = null;
+            if ($input->getOption('ai-filter') !== false) {
+                $aiFilterDescription = $input->getOption('ai-filter') ?: $io->ask('Enter your filtering description');
+                if ($aiFilterDescription) {
+                    $io->writeln('Using AI filter: '.$aiFilterDescription, OutputInterface::VERBOSITY_VERBOSE);
+                }
+            }
+
+            // Execute the copy tree operation with both ruleset and AI filtering
             $executor = new CopyTreeExecutor(
-                $input->getOption('only-tree')
+                onlyTree: $input->getOption('only-tree'),
+                aiFilterDescription: $aiFilterDescription,
+                io: $io // Pass SymfonyStyle for AI filter feedback
             );
 
             $result = $executor->execute($ruleset);
 
-            // Apply AI filtering if requested
-            if ($aiFilter !== false) {
-                try {
-                    $filterDescription = $aiFilter ?: $io->ask('Enter your filtering description');
-                    if ($filterDescription) {
-                        $io->writeln('Applying AI filter...', OutputInterface::VERBOSITY_VERBOSE);
-                        $aiFilterUtil = new OpenAIFileFilter;
-                        $filterResult = $aiFilterUtil->filterFiles($result['files'], $filterDescription);
-
-                        // Update the result with filtered files
-                        $result['files'] = $filterResult['files'];
-                        $result['fileCount'] = count($filterResult['files']);
-
-                        // Show the AI's explanation
-                        $io->writeln('AI Filter explanation: '.$filterResult['explanation'], OutputInterface::VERBOSITY_VERBOSE);
-                    }
-                } catch (\Exception $e) {
-                    $io->warning('AI filtering failed: '.$e->getMessage());
-                    $io->writeln('Continuing with unfiltered results...', OutputInterface::VERBOSITY_VERBOSE);
-                }
-            }
-
             // Process the output option
             $outputOption = $input->getOption('output');
-            $useOutput = ! empty($outputOption); // Will be true if -o is used at all
+            $useOutput = ! empty($outputOption);
             $outputFile = $useOutput ? (reset($outputOption) ?: '') : null;
 
             // Handle output
