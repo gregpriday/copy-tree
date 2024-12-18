@@ -36,6 +36,7 @@ class CopyTreeCommand extends Command
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
+            ->addOption('as-reference', 'p', InputOption::VALUE_NONE, 'Copy a reference to a temporary file instead of copying the content directly.')
             ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
             ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Do not use or keep cached GitHub repositories.')
             ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription);
@@ -97,7 +98,8 @@ class CopyTreeCommand extends Command
             $outputManager = new OutputManager(
                 $input->getOption('display'),
                 $input->getOption('output'),
-                $input->getOption('stream')
+                $input->getOption('stream'),
+                $input->getOption('as-reference')
             );
 
             $outputManager->handleOutput($result, $io);

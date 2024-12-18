@@ -13,18 +13,21 @@ use Symfony\Component\Process\Process;
  */
 class Clipboard
 {
-    private $contents;
+    private string $contents;
 
-    private $os;
+    private string $os;
+
+    private bool $isFilePath = false;
 
     public function __construct()
     {
         $this->os = php_uname();
     }
 
-    public function copy(string $contents): void
+    public function copy(string $contents, bool $isFilePath = false): void
     {
         $this->contents = $contents;
+        $this->isFilePath = $isFilePath;
 
         if (stripos($this->os, 'Windows') !== false) {
             $this->runWindowsCommand();
@@ -37,18 +40,23 @@ class Clipboard
 
     private function runWindowsCommand(): void
     {
-        // Create a temporary file
-        $tempFile = tempnam(sys_get_temp_dir(), 'ctree_');
-        file_put_contents($tempFile, $this->contents);
-
-        // Use PowerShell to read the file and pipe it to clip.exe
-        $command = sprintf('powershell.exe -Command "Get-Content -Path \'%s\' -Raw | Set-Clipboard"', $tempFile);
+        if ($this->isFilePath) {
+            // For file paths, we want to maintain Windows backslashes
+            $path = str_replace('/', '\\', $this->contents);
+            $command = sprintf('echo %s| clip', escapeshellarg($path));
+        } else {
+            // Create a temporary file for content
+            $tempFile = tempnam(sys_get_temp_dir(), 'ctree_');
+            file_put_contents($tempFile, $this->contents);
+            $command = sprintf('powershell.exe -Command "Get-Content -Path \'%s\' -Raw | Set-Clipboard"', $tempFile);
+        }
 
         $process = Process::fromShellCommandline($command);
         $process->run();
 
-        // Clean up the temporary file
-        unlink($tempFile);
+        if (isset($tempFile)) {
+            unlink($tempFile);
+        }
 
         if (! $process->isSuccessful()) {
             throw new ProcessFailedException($process);
@@ -57,8 +65,20 @@ class Clipboard
 
     private function runMacCommand(): void
     {
-        $process = Process::fromShellCommandline('pbcopy');
-        $process->setInput($this->contents);
+        if ($this->isFilePath) {
+            // For file paths, use osascript to copy the file reference
+            $command = sprintf('osascript -e \'
+            set aFile to POSIX file "%s"
+            tell app "Finder" to set the clipboard to aFile\'',
+                str_replace('"', '\"', $this->contents)
+            );
+            $process = Process::fromShellCommandline($command);
+        } else {
+            // For regular text content, use pbcopy
+            $process = Process::fromShellCommandline('pbcopy');
+            $process->setInput($this->contents);
+        }
+
         $process->run();
 
         if (! $process->isSuccessful()) {
@@ -68,7 +88,6 @@ class Clipboard
 
     private function runLinuxCommand(): void
     {
-        // Check if DISPLAY is set (X server is available)
         if (! getenv('DISPLAY')) {
             $this->simulateClipboard();
 
@@ -86,11 +105,8 @@ class Clipboard
 
     private function simulateClipboard(): void
     {
-        // Simulate clipboard by writing to a file or environment variable
         $clipboardFile = sys_get_temp_dir().'/clipboard_contents.txt';
         file_put_contents($clipboardFile, $this->contents);
-
-        // Set an environment variable
         putenv('SIMULATED_CLIPBOARD='.base64_encode($this->contents));
     }
 }

@@ -3,6 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Utilities\Clipboard;
+use GregPriday\CopyTree\Utilities\TempFileManager;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -15,16 +16,22 @@ class OutputManager
 {
     private Clipboard $clipboard;
 
+    private bool $useTemporaryFile;
+
     public function __construct(
         private bool $displayOutput,
         private ?string $outputFile,
-        private bool $streamOutput = false
+        private bool $streamOutput = false,
+        private bool $copyAsFile = false
     ) {
         $this->clipboard = new Clipboard;
     }
 
     public function handleOutput(array $result, SymfonyStyle $io): void
     {
+        // Clean old temporary files first
+        TempFileManager::cleanOldFiles();
+
         // If streaming is enabled, write directly to output
         if ($this->streamOutput) {
             $io->write($result['output'], false);
@@ -36,8 +43,16 @@ class OutputManager
             $this->saveToFile($result['output'], $this->outputFile);
             $io->writeln(sprintf('<info>✓ Saved %d files to %s</info>', $result['fileCount'], $this->outputFile));
         } elseif (! $this->displayOutput) {
-            $this->clipboard->copy($result['output']);
-            $io->writeln(sprintf('<info>✓ Copied %d files to clipboard</info>', $result['fileCount']));
+            if ($this->copyAsFile) {
+                // Create temporary file and copy its path
+                $tempFile = TempFileManager::createTempFile($result['output']);
+                $this->clipboard->copy($tempFile, true);
+                $io->writeln(sprintf('<info>✓ Created temporary file and copied path to clipboard: %s</info>', $tempFile));
+            } else {
+                // Copy content directly to clipboard
+                $this->clipboard->copy($result['output']);
+                $io->writeln(sprintf('<info>✓ Copied %d files to clipboard</info>', $result['fileCount']));
+            }
         }
 
         if ($this->displayOutput) {
