@@ -23,7 +23,7 @@ class WorkspaceManagerTest extends TestCase
         $this->removeDirectory($this->testDir);
     }
 
-    public function testLoadValidWorkspaceConfiguration(): void
+    public function test_load_valid_workspace_configuration(): void
     {
         $config = [
             'workspaces' => [
@@ -50,7 +50,7 @@ class WorkspaceManagerTest extends TestCase
         $this->assertEquals(['frontend'], $manager->getAvailableWorkspaces());
     }
 
-    public function testLoadInvalidWorkspaceConfiguration(): void
+    public function test_load_invalid_workspace_configuration(): void
     {
         file_put_contents(
             $this->testDir.'/.ctree/workspaces.json',
@@ -61,7 +61,7 @@ class WorkspaceManagerTest extends TestCase
         new WorkspaceManager($this->testDir);
     }
 
-    public function testNonExistentWorkspace(): void
+    public function test_non_existent_workspace(): void
     {
         $manager = new WorkspaceManager($this->testDir);
 
