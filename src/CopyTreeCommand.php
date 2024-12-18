@@ -30,7 +30,7 @@ class CopyTreeCommand extends Command
             ->setHelp('This command copies the directory tree to the clipboard by default. You can also display the tree in the console or skip copying to the clipboard.')
             ->addArgument('path', InputArgument::OPTIONAL, 'The directory path or GitHub URL', getcwd())
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
-            ->addOption('output', 'o', InputOption::VALUE_OPTIONAL, 'Outputs to a file instead of the clipboard.')
+            ->addOption('output', 'o', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Outputs to a file. If no filename is provided, creates file in ~/.copytree/files/')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('stream', 's', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
@@ -94,10 +94,15 @@ class CopyTreeCommand extends Command
 
             $result = $executor->execute($ruleset);
 
+            // Process the output option
+            $outputOption = $input->getOption('output');
+            $useOutput = ! empty($outputOption); // Will be true if -o is used at all
+            $outputFile = $useOutput ? (reset($outputOption) ?: '') : null;
+
             // Handle output
             $outputManager = new OutputManager(
                 $input->getOption('display'),
-                $input->getOption('output'),
+                $outputFile,
                 $input->getOption('stream'),
                 $input->getOption('as-reference')
             );

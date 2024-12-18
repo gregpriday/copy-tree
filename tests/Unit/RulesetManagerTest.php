@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Tests\Ruleset;
+namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;

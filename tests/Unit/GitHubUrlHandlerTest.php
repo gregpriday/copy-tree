@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Tests\Integration;
+namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\CopyTreeCommand;
 use PHPUnit\Framework\TestCase;

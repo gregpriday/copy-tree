@@ -1,6 +1,8 @@
 <?php
 
-namespace GregPriday\CopyTree\Tests;
+namespace GregPriday\CopyTree\Tests\Unit;
+
+use GregPriday\CopyTree\Tests\TestCase;
 
 class CopyTreeCommandTest extends TestCase
 {

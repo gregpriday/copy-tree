@@ -32,6 +32,7 @@ class CopyTreeExecutor
         return [
             'output' => $combinedOutput,
             'fileCount' => count($filteredFiles),
+            'files' => $filteredFiles,
         ];
     }
 }
