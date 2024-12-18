@@ -20,7 +20,7 @@ class WorkspaceResolverTest extends TestCase
         $this->resolver = new WorkspaceResolver($this->rulesetManager);
     }
 
-    public function testResolveWorkspaceWithExtension(): void
+    public function test_resolve_workspace_with_extension(): void
     {
         $baseRuleset = $this->createMock(RulesetFilter::class);
         $baseRuleset->expects($this->once())
@@ -44,7 +44,7 @@ class WorkspaceResolverTest extends TestCase
         $this->assertInstanceOf(RulesetFilter::class, $result);
     }
 
-    public function testResolveWorkspaceWithoutExtension(): void
+    public function test_resolve_workspace_without_extension(): void
     {
         $emptyRuleset = $this->createMock(RulesetFilter::class);
 

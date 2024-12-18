@@ -41,7 +41,7 @@ class CopyTreeCommandTest extends TestCase
         parent::tearDown();
     }
 
-    public function testExecuteWithWorkspace(): void
+    public function test_execute_with_workspace(): void
     {
         // Create a temporary workspace configuration
         $rulesetDir = self::PROJECT_ROOT.'.ctree';
@@ -79,7 +79,7 @@ class CopyTreeCommandTest extends TestCase
         rmdir($rulesetDir);
     }
 
-    public function testExecuteWithWorkspaceAndFormat(): void
+    public function test_execute_with_workspace_and_format(): void
     {
         // Create a temporary workspace configuration
         $rulesetDir = self::PROJECT_ROOT.'.ctree';
@@ -120,7 +120,7 @@ class CopyTreeCommandTest extends TestCase
         rmdir($rulesetDir);
     }
 
-    public function testExecuteWithNonexistentWorkspace(): void
+    public function test_execute_with_nonexistent_workspace(): void
     {
         $this->commandTester->execute([
             'path' => self::TEST_DIR,
