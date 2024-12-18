@@ -47,7 +47,7 @@ class OutputManager
                 // Create temporary file and copy its path
                 $tempFile = TempFileManager::createTempFile($result['output']);
                 $this->clipboard->copy($tempFile, true);
-                $io->writeln(sprintf('<info>✓ Created temporary file and copied path to clipboard: %s</info>', $tempFile));
+                $io->writeln(sprintf('<info>✓ Created and copied reference to temporary file: %s</info>', $tempFile));
             } else {
                 // Copy content directly to clipboard
                 $this->clipboard->copy($result['output']);
