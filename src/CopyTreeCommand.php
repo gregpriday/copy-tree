@@ -4,6 +4,7 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,6 +46,10 @@ class CopyTreeCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if (PHP_OS_FAMILY !== 'Darwin') {
+            throw new RuntimeException('This package only supports MacOS.');
+        }
+
         $io = new SymfonyStyle($input, $output);
 
         // Handle cache clearing
@@ -101,7 +106,7 @@ class CopyTreeCommand extends Command
             $executor = new CopyTreeExecutor(
                 onlyTree: $input->getOption('only-tree'),
                 aiFilterDescription: $aiFilterDescription,
-                io: $io // Pass SymfonyStyle for AI filter feedback
+                io: $io
             );
 
             $result = $executor->execute($ruleset);
@@ -128,7 +133,6 @@ class CopyTreeCommand extends Command
             }
 
             return Command::SUCCESS;
-
         } catch (\Exception $e) {
             // Clean up if there was an error and --no-cache was set
             if (isset($githubHandler) && $noCache) {
