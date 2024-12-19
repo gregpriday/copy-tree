@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\Utilities\OpenAI;
 
 use InvalidArgumentException;
 use OpenAI\Client;
@@ -13,6 +13,8 @@ class OpenAIFilenameGenerator
     private string $apiKey;
 
     private string $organization;
+
+    private string $model;
 
     public function __construct()
     {
@@ -36,6 +38,7 @@ class OpenAIFilenameGenerator
 
         $this->apiKey = $env['OPENAI_API_KEY'];
         $this->organization = $env['OPENAI_API_ORG'];
+        $this->model = $env['OPENAI_MODEL'] ?? 'gpt-4o';
     }
 
     private function getConfigPath(): string
@@ -72,7 +75,7 @@ class OpenAIFilenameGenerator
         try {
             $system = file_get_contents(__DIR__.'/../../prompts/filename-generator/system.txt');
             $response = $this->client->chat()->create([
-                'model' => 'gpt-4o',
+                'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $system],
                     ['role' => 'user', 'content' => "Generate a descriptive filename for the following set of files:\n\n{$filesList}"],

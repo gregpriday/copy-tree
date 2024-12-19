@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\Utilities\OpenAI;
 
 use InvalidArgumentException;
 use OpenAI\Client;
@@ -13,6 +13,8 @@ class OpenAIFileFilter
     private string $apiKey;
 
     private string $organization;
+
+    private string $model;
 
     private int $previewLength = 450;
 
@@ -38,6 +40,7 @@ class OpenAIFileFilter
 
         $this->apiKey = $env['OPENAI_API_KEY'];
         $this->organization = $env['OPENAI_API_ORG'];
+        $this->model = $env['OPENAI_MODEL'] ?? 'gpt-4o';
     }
 
     private function getConfigPath(): string
@@ -74,7 +77,7 @@ class OpenAIFileFilter
         try {
             $system = file_get_contents(__DIR__.'/../../prompts/file-filter/system.txt');
             $response = $this->client->chat()->create([
-                'model' => 'gpt-4o',
+                'model' => $this->model,
                 'messages' => [
                     ['role' => 'system', 'content' => $system],
                     [

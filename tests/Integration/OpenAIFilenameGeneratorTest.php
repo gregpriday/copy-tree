@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree\Tests\Integration;
 
 use GregPriday\CopyTree\Tests\TestCase;
-use GregPriday\CopyTree\Utilities\OpenAIFilenameGenerator;
+use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFilenameGenerator;
 
 class OpenAIFilenameGeneratorTest extends TestCase
 {

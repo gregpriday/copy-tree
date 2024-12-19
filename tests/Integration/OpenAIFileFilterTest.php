@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree\Tests\Integration;
 
 use GregPriday\CopyTree\Tests\TestCase;
-use GregPriday\CopyTree\Utilities\OpenAIFileFilter;
+use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFileFilter;
 use SplFileInfo;
 
 class OpenAIFileFilterTest extends TestCase

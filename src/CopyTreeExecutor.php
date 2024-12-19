@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
-use GregPriday\CopyTree\Utilities\OpenAIFileFilter;
+use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFileFilter;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use Symfony\Component\Console\Style\SymfonyStyle;

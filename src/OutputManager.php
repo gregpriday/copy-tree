@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Utilities\Clipboard;
-use GregPriday\CopyTree\Utilities\OpenAIFilenameGenerator;
+use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFilenameGenerator;
 use GregPriday\CopyTree\Utilities\TempFileManager;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
