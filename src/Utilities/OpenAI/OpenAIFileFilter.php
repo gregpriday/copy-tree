@@ -75,7 +75,7 @@ class OpenAIFileFilter
         }, $files);
 
         try {
-            $system = file_get_contents(__DIR__.'/../../prompts/file-filter/system.txt');
+            $system = file_get_contents(__DIR__.'/../../../prompts/file-filter/system.txt');
             $response = $this->client->chat()->create([
                 'model' => $this->model,
                 'messages' => [

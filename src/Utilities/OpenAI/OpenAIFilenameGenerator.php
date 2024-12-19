@@ -73,7 +73,7 @@ class OpenAIFilenameGenerator
         }, $files));
 
         try {
-            $system = file_get_contents(__DIR__.'/../../prompts/filename-generator/system.txt');
+            $system = file_get_contents(__DIR__.'/../../../prompts/filename-generator/system.txt');
             $response = $this->client->chat()->create([
                 'model' => $this->model,
                 'messages' => [
