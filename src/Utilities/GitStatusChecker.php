@@ -36,6 +36,7 @@ class GitStatusChecker
     {
         try {
             $this->git->open($path);
+
             return true;
         } catch (\Exception) {
             return false;
@@ -49,7 +50,7 @@ class GitStatusChecker
      */
     public function getModifiedFiles(): array
     {
-        if (!$this->repository) {
+        if (! $this->repository) {
             throw new RuntimeException('Repository not initialized');
         }
 
@@ -88,7 +89,7 @@ class GitStatusChecker
             return array_unique($files);
 
         } catch (\Exception $e) {
-            throw new RuntimeException('Failed to get modified files: ' . $e->getMessage());
+            throw new RuntimeException('Failed to get modified files: '.$e->getMessage());
         }
     }
 
@@ -99,7 +100,7 @@ class GitStatusChecker
      */
     public function getChangedFilesBetweenCommits(string $fromCommit, string $toCommit = 'HEAD'): array
     {
-        if (!$this->repository) {
+        if (! $this->repository) {
             throw new RuntimeException('Repository not initialized');
         }
 
@@ -114,7 +115,7 @@ class GitStatusChecker
             return array_filter(explode("\n", trim($output)));
 
         } catch (\Exception $e) {
-            throw new RuntimeException("Failed to get changed files between {$fromCommit} and {$toCommit}: " . $e->getMessage());
+            throw new RuntimeException("Failed to get changed files between {$fromCommit} and {$toCommit}: ".$e->getMessage());
         }
     }
 
@@ -125,7 +126,7 @@ class GitStatusChecker
      */
     public function getFilesInLastCommit(): array
     {
-        if (!$this->repository) {
+        if (! $this->repository) {
             throw new RuntimeException('Repository not initialized');
         }
 
@@ -139,7 +140,7 @@ class GitStatusChecker
             return array_filter(explode("\n", trim($output)));
 
         } catch (\Exception $e) {
-            throw new RuntimeException('Failed to get files in last commit: ' . $e->getMessage());
+            throw new RuntimeException('Failed to get files in last commit: '.$e->getMessage());
         }
     }
 
@@ -148,7 +149,7 @@ class GitStatusChecker
      */
     public function getRepositoryRoot(): string
     {
-        if (!$this->repository) {
+        if (! $this->repository) {
             throw new RuntimeException('Repository not initialized');
         }
 
@@ -160,7 +161,7 @@ class GitStatusChecker
      */
     public function hasChanges(): bool
     {
-        if (!$this->repository) {
+        if (! $this->repository) {
             throw new RuntimeException('Repository not initialized');
         }
 
