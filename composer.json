@@ -17,6 +17,7 @@
     "require": {
         "php": "^8.2",
         "ext-fileinfo": "*",
+        "czproject/git-php": "^4.3",
         "illuminate/support": "^11.15",
         "openai-php/client": "^0.10.3",
         "symfony/console": "^6.0|^7.0",

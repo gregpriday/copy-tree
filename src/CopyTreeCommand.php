@@ -35,7 +35,7 @@ class CopyTreeCommand extends Command
 
             // Core functionality options
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
-            ->addOption('max-lines', 'm', InputOption::VALUE_OPTIONAL, 'Maximum number of lines to show per file. Use 0 for unlimited.', 0)
+            ->addOption('max-lines', 'l', InputOption::VALUE_OPTIONAL, 'Maximum number of lines to show per file. Use 0 for unlimited.', 0)
             ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
 
             // Filtering options
@@ -43,6 +43,7 @@ class CopyTreeCommand extends Command
             ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
+            ->addOption('modified', 'm', InputOption::VALUE_NONE, 'Only include files that have been modified since the last commit')
 
             // Output options
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Outputs to a file. If no filename is provided, creates file in ~/.copytree/files/')
@@ -82,11 +83,16 @@ class CopyTreeCommand extends Command
         $rulesetOption = $input->getOption('ruleset');
         $workspace = $input->getOption('workspace');
         $noCache = $input->getOption('no-cache');
+        $modifiedOnly = $input->getOption('modified');
 
         try {
             // Handle GitHub URLs
             $githubHandler = null;
             if (GitHubUrlHandler::isGitHubUrl($path)) {
+                if ($modifiedOnly) {
+                    throw new RuntimeException('The --modified option cannot be used with GitHub URLs');
+                }
+
                 $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
                 $githubHandler = new GitHubUrlHandler($path);
                 $path = $githubHandler->getFiles();
@@ -113,12 +119,19 @@ class CopyTreeCommand extends Command
                 }
             }
 
-            // Execute the copy tree operation with both ruleset and AI filtering
+            // If using modified files, show verbose message
+            if ($modifiedOnly) {
+                $io->writeln('Filtering modified files since last commit...', OutputInterface::VERBOSITY_VERBOSE);
+            }
+
+            // Execute the copy tree operation with filters
             $executor = new CopyTreeExecutor(
+                path: $path,
                 onlyTree: $input->getOption('only-tree'),
                 aiFilterDescription: $aiFilterDescription,
                 io: $io,
-                maxLines: (int) $input->getOption('max-lines')
+                maxLines: (int) $input->getOption('max-lines'),
+                modifiedOnly: $modifiedOnly
             );
 
             $result = $executor->execute($ruleset);
