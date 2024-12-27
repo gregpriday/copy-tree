@@ -29,19 +29,30 @@ class CopyTreeCommand extends Command
             ->setName('app:copy-tree')
             ->setDescription('Copies the directory tree to the clipboard and optionally displays it.')
             ->setHelp('This command copies the directory tree to the clipboard by default. You can also display the tree in the console or skip copying to the clipboard.')
+
+            // Main argument
             ->addArgument('path', InputArgument::OPTIONAL, 'The directory path or GitHub URL', getcwd())
+
+            // Core functionality options
             ->addOption('depth', 'd', InputOption::VALUE_OPTIONAL, 'Maximum depth of the tree.', 10)
+            ->addOption('max-lines', 'm', InputOption::VALUE_OPTIONAL, 'Maximum number of lines to show per file. Use 0 for unlimited.', 0)
+            ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
+
+            // Filtering options
+            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
+            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
+            ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
+            ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
+
+            // Output options
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Outputs to a file. If no filename is provided, creates file in ~/.copytree/files/')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
             ->addOption('stream', 's', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
-            ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
-            ->addOption('only-tree', 't', InputOption::VALUE_NONE, 'Include only the directory tree in the output, not the file contents.')
-            ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
-            ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
             ->addOption('as-reference', 'p', InputOption::VALUE_NONE, 'Copy a reference to a temporary file instead of copying the content directly.')
-            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
+
+            // GitHub-related options
             ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Do not use or keep cached GitHub repositories.')
-            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription);
+            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -106,7 +117,8 @@ class CopyTreeCommand extends Command
             $executor = new CopyTreeExecutor(
                 onlyTree: $input->getOption('only-tree'),
                 aiFilterDescription: $aiFilterDescription,
-                io: $io
+                io: $io,
+                maxLines: (int) $input->getOption('max-lines')
             );
 
             $result = $executor->execute($ruleset);

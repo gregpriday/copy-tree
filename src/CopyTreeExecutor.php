@@ -19,7 +19,8 @@ class CopyTreeExecutor
     public function __construct(
         private readonly bool $onlyTree,
         private readonly ?string $aiFilterDescription = null,
-        private readonly ?SymfonyStyle $io = null
+        private readonly ?SymfonyStyle $io = null,
+        private readonly int $maxLines = 0
     ) {}
 
     public function execute(RulesetFilter $ruleset): array
@@ -67,7 +68,7 @@ class CopyTreeExecutor
 
         // Add file contents if requested
         if (! $this->onlyTree) {
-            $fileContentsOutput = FileContentsView::render($filteredFiles);
+            $fileContentsOutput = FileContentsView::render($filteredFiles, $this->maxLines);
             $combinedOutput .= "\n\n---\n\n".$fileContentsOutput;
         }
 
