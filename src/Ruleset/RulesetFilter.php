@@ -306,7 +306,7 @@ class RulesetFilter
         }
 
         // If comparing file sizes
-        if (is_numeric($a) && is_string($b) && preg_match('/^\s*([0-9\.]+)\s*([kmg]i?)?\s*$/i', $b, $matches)) {
+        if (is_numeric($a) && is_string($b) && preg_match('/^\s*((?:\d+\.?\d*|\.\d+))\s*([kmg]i?b?)?\s*$/i', $b, $matches)) {
             $size = (float) $matches[1];
             $unit = $matches[2] ?? '';
             $sizeInBytes = $this->convertToBytes($size, $unit);
