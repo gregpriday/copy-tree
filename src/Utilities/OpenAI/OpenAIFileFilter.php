@@ -3,63 +3,25 @@
 namespace GregPriday\CopyTree\Utilities\OpenAI;
 
 use InvalidArgumentException;
-use OpenAI\Client;
 use RuntimeException;
 
-class OpenAIFileFilter
+class OpenAIFileFilter extends BaseOpenAIService
 {
-    private ?Client $client = null;
-
-    private string $apiKey;
-
-    private string $organization;
-
-    private string $model;
-
+    /**
+     * Maximum length of file content preview to send to OpenAI
+     */
     private int $previewLength = 450;
 
-    public function __construct()
-    {
-        $this->loadConfiguration();
-        $this->initializeClient();
-    }
-
-    private function loadConfiguration(): void
-    {
-        $envPath = $this->getConfigPath();
-
-        if (! file_exists($envPath)) {
-            throw new RuntimeException("OpenAI configuration file not found at {$envPath}");
-        }
-
-        $env = parse_ini_file($envPath);
-
-        if (! isset($env['OPENAI_API_KEY']) || ! isset($env['OPENAI_API_ORG'])) {
-            throw new RuntimeException('OpenAI API key or organization not found in configuration');
-        }
-
-        $this->apiKey = $env['OPENAI_API_KEY'];
-        $this->organization = $env['OPENAI_API_ORG'];
-        $this->model = $env['OPENAI_MODEL'] ?? 'gpt-4o';
-    }
-
-    private function getConfigPath(): string
-    {
-        $homeDir = PHP_OS_FAMILY === 'Windows' ?
-            getenv('USERPROFILE') :
-            getenv('HOME');
-
-        return $homeDir.DIRECTORY_SEPARATOR.'.copytree'.DIRECTORY_SEPARATOR.'.env';
-    }
-
-    private function initializeClient(): void
-    {
-        $this->client = \OpenAI::factory()
-            ->withApiKey($this->apiKey)
-            ->withOrganization($this->organization)
-            ->make();
-    }
-
+    /**
+     * Filter files based on a natural language description
+     *
+     * @param  array  $files  Array of files to filter, each containing 'path' and 'file' keys
+     * @param  string  $filterDescription  Natural language description of files to include
+     * @return array{files: array, explanation: string} Filtered files and explanation
+     *
+     * @throws InvalidArgumentException When no files are provided
+     * @throws RuntimeException When filtering fails
+     */
     public function filterFiles(array $files, string $filterDescription): array
     {
         if (empty($files)) {
@@ -74,77 +36,79 @@ class OpenAIFileFilter
             ];
         }, $files);
 
-        try {
-            $system = file_get_contents(__DIR__.'/../../../prompts/file-filter/system.txt');
-            $response = $this->client->chat()->create([
-                'model' => $this->model,
-                'messages' => [
-                    ['role' => 'system', 'content' => $system],
-                    [
-                        'role' => 'user',
-                        'content' => json_encode([
-                            'description' => $filterDescription,
-                            'files' => $filesData,
-                        ]),
-                    ],
-                ],
-                'response_format' => [
-                    'type' => 'json_schema',
-                    'json_schema' => [
-                        'name' => 'filter_files',
-                        'description' => 'Filters files based on paths and content according to user description',
-                        'strict' => true,
-                        'schema' => [
-                            'type' => 'object',
-                            'properties' => [
-                                'files' => [
-                                    'type' => 'array',
-                                    'items' => [
-                                        'type' => 'string',
-                                        'description' => 'Paths of files to include in the filtered results',
-                                    ],
-                                    'description' => 'Array of file paths that match the filtering criteria',
-                                ],
-                                'explanation' => [
-                                    'type' => 'string',
-                                    'description' => 'Brief explanation of why these files were selected',
-                                ],
-                            ],
-                            'required' => ['files', 'explanation'],
-                            'additionalProperties' => false,
+        $schema = [
+            'name' => 'filter_files',
+            'description' => 'Filters files based on paths and content according to user description',
+            'strict' => true,
+            'schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'files' => [
+                        'type' => 'array',
+                        'items' => [
+                            'type' => 'string',
+                            'description' => 'Paths of files to include in the filtered results',
                         ],
+                        'description' => 'Array of file paths that match the filtering criteria',
+                    ],
+                    'explanation' => [
+                        'type' => 'string',
+                        'description' => 'Brief explanation of why these files were selected',
                     ],
                 ],
-                'temperature' => 0.3,
-                'max_tokens' => 1000,
-            ]);
+                'required' => ['files', 'explanation'],
+                'additionalProperties' => false,
+            ],
+        ];
 
-            $result = json_decode($response->choices[0]->message->content, true);
+        $system = file_get_contents(__DIR__.'/../../../prompts/file-filter/system.txt');
+        $result = $this->createChatCompletion(
+            [
+                ['role' => 'system', 'content' => $system],
+                [
+                    'role' => 'user',
+                    'content' => json_encode([
+                        'description' => $filterDescription,
+                        'files' => $filesData,
+                    ]),
+                ],
+            ],
+            $schema
+        );
 
-            // Filter the original files array based on the returned paths
-            return [
-                'files' => array_filter($files, function ($file) use ($result) {
-                    return in_array($file['path'], $result['files']);
-                }),
-                'explanation' => $result['explanation'],
-            ];
-
-        } catch (\Exception $e) {
-            throw new RuntimeException('Failed to filter files: '.$e->getMessage());
-        }
+        // Filter the original files array based on the returned paths
+        return [
+            'files' => array_filter($files, function ($file) use ($result) {
+                return in_array($file['path'], $result['files']);
+            }),
+            'explanation' => $result['explanation'],
+        ];
     }
 
+    /**
+     * Get a preview of file contents
+     *
+     * @param  string  $filepath  Path to the file
+     * @return string Preview of file contents or error message
+     */
     private function getFilePreview(string $filepath): string
     {
         try {
             $content = file_get_contents($filepath);
 
             return mb_substr($content, 0, $this->previewLength);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return '[Error reading file content]';
         }
     }
 
+    /**
+     * Set the maximum length of file content previews
+     *
+     * @param  int  $length  Maximum preview length in characters
+     *
+     * @throws InvalidArgumentException When length is less than 1
+     */
     public function setPreviewLength(int $length): void
     {
         if ($length < 1) {
