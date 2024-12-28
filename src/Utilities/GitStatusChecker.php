@@ -105,6 +105,14 @@ class GitStatusChecker
         }
 
         try {
+            // Check if commits exist
+            $this->repository->execute('rev-parse', '--verify', $fromCommit);
+            $this->repository->execute('rev-parse', '--verify', $toCommit);
+        } catch (\Exception $e) {
+            throw new RuntimeException("One or both commits do not exist: {$e->getMessage()}");
+        }
+
+        try {
             // Get the diff between commits
             $output = $this->repository->execute('diff', '--name-only', $fromCommit, $toCommit);
 

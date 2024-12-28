@@ -43,7 +43,10 @@ class CopyTreeCommand extends Command
             ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
+
+            // Git based filtering
             ->addOption('modified', 'm', InputOption::VALUE_NONE, 'Only include files that have been modified since the last commit')
+            ->addOption('changes', 'c', InputOption::VALUE_REQUIRED, 'Filter for files changed between two commits in format "commit1:commit2" (e.g. abc123:def456)')
 
             // Output options
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Outputs to a file. If no filename is provided, creates file in ~/.copytree/files/')
@@ -84,6 +87,12 @@ class CopyTreeCommand extends Command
         $workspace = $input->getOption('workspace');
         $noCache = $input->getOption('no-cache');
         $modifiedOnly = $input->getOption('modified');
+        $changes = $input->getOption('changes');
+
+        // Add after getting the options
+        if ($modifiedOnly && $changes) {
+            throw new RuntimeException('The --modified and --changes options cannot be used together');
+        }
 
         try {
             // Handle GitHub URLs
@@ -91,6 +100,9 @@ class CopyTreeCommand extends Command
             if (GitHubUrlHandler::isGitHubUrl($path)) {
                 if ($modifiedOnly) {
                     throw new RuntimeException('The --modified option cannot be used with GitHub URLs');
+                }
+                if ($changes) {
+                    throw new RuntimeException('The --changes option cannot be used with GitHub URLs');
                 }
 
                 $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
@@ -124,6 +136,11 @@ class CopyTreeCommand extends Command
                 $io->writeln('Filtering modified files since last commit...', OutputInterface::VERBOSITY_VERBOSE);
             }
 
+            // If using changes between commits, show verbose message
+            if ($changes) {
+                $io->writeln('Filtering files changed between commits...', OutputInterface::VERBOSITY_VERBOSE);
+            }
+
             // Execute the copy tree operation with filters
             $executor = new CopyTreeExecutor(
                 path: $path,
@@ -131,7 +148,8 @@ class CopyTreeCommand extends Command
                 aiFilterDescription: $aiFilterDescription,
                 io: $io,
                 maxLines: (int) $input->getOption('max-lines'),
-                modifiedOnly: $modifiedOnly
+                modifiedOnly: $modifiedOnly,
+                changes: $changes
             );
 
             $result = $executor->execute($ruleset);

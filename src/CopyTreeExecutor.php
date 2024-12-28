@@ -25,7 +25,8 @@ class CopyTreeExecutor
         private readonly ?string $aiFilterDescription = null,
         private readonly ?SymfonyStyle $io = null,
         private readonly int $maxLines = 0,
-        private readonly bool $modifiedOnly = false
+        private readonly bool $modifiedOnly = false,
+        private readonly ?string $changes = null
     ) {}
 
     public function execute(RulesetFilter $ruleset): array
@@ -33,8 +34,53 @@ class CopyTreeExecutor
         // First apply the ruleset filter
         $filteredFiles = iterator_to_array($ruleset->getFilteredFiles());
 
+        // If changes parameter is set, filter by Git changes between commits
+        if ($this->changes && ! empty($filteredFiles)) {
+            try {
+                $gitChecker = new GitStatusChecker;
+
+                if (! $gitChecker->isGitRepository($this->path)) {
+                    throw new RuntimeException('Not a Git repository');
+                }
+
+                $gitChecker->initRepository($this->path);
+
+                // Get the commits from the changes parameter
+                $commits = explode(':', $this->changes);
+                $fromCommit = $commits[0];
+                $toCommit = $commits[1] ?? 'HEAD';
+
+                $changedFiles = $gitChecker->getChangedFilesBetweenCommits($fromCommit, $toCommit);
+                $repoRoot = $gitChecker->getRepositoryRoot();
+
+                // Filter files to only include those in the changed list
+                $filteredFiles = array_filter($filteredFiles, function ($file) use ($changedFiles, $repoRoot) {
+                    $relativePath = str_replace($repoRoot.'/', '', $file['file']->getRealPath());
+
+                    return in_array($relativePath, $changedFiles);
+                });
+
+                if ($this->io) {
+                    $this->io->writeln(
+                        'Filtered to '.count($filteredFiles).' changed files',
+                        OutputInterface::VERBOSITY_VERBOSE
+                    );
+                }
+
+            } catch (\Exception $e) {
+                if ($this->io) {
+                    $this->io->warning('Git change filtering failed: '.$e->getMessage());
+                    $this->io->writeln(
+                        'Continuing with unfiltered results...',
+                        OutputInterface::VERBOSITY_VERBOSE
+                    );
+                } else {
+                    throw $e; // Re-throw if we can't communicate the error
+                }
+            }
+        }
         // If modified only flag is set, filter by Git status
-        if ($this->modifiedOnly && ! empty($filteredFiles)) {
+        elseif ($this->modifiedOnly && ! empty($filteredFiles)) {
             try {
                 $gitChecker = new GitStatusChecker;
 

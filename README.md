@@ -140,6 +140,31 @@ ctree --stream
 ctree --as-reference
 ```
 
+### Git Filtering
+
+Filter files based on Git changes:
+
+```bash
+# Only include files modified since last commit
+ctree --modified
+
+# Show changes between two commits
+ctree --changes=abc123:def456
+
+# Compare a commit to HEAD
+ctree --changes=abc123
+```
+
+The Git filtering options help you focus on specific changes in your repository:
+
+- `--modified` (`-m`): Only include files that have been modified since the last commit
+- `--changes` (`-c`): Filter for files changed between two commits or between a commit and HEAD
+
+These options are useful for:
+- Sharing recent changes with collaborators
+- Reviewing specific commit changes with AI assistants
+- Documenting what changed between two versions
+
 ### Ruleset System
 
 Ctree uses a powerful and flexible ruleset system to determine which files to include or exclude.
