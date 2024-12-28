@@ -1,117 +1,186 @@
 # Ctree Fields and Operations Reference
 
-This page documents all the available fields and operations that can be used in Ctree rulesets to filter files and directories.
+This page documents all available fields and operations that can be used in Ctree rulesets to filter files and directories.
 
 For a complete guide on writing rulesets, see the [Writing Rulesets](./rulesets.md) documentation.
 
 ## Fields
 
-Ctree rulesets allow you to match against various attributes of files and directories. Here are the available fields:
+Ctree rulesets allow you to match against various attributes of files and directories:
 
-- `folder`: The directory path relative to the base directory.
-    - Example: `src/components`
+### Path-based Fields
 
-- `path`: The full file path relative to the base directory.
-    - Example: `src/components/Button.js`
+- `folder`: The directory path relative to the base directory
+    - Examples: `src/components`, `tests/unit`
+    - Useful for filtering entire directories
 
-- `dirname`: The directory name.
-    - Example: `components`
+- `path`: The complete file path relative to the base directory
+    - Examples: `src/components/Button.js`, `tests/unit/ButtonTest.php`
+    - Best for exact file matching or complex patterns
 
-- `basename`: The file name including extension.
-    - Example: `Button.js`
+- `dirname`: The immediate parent directory name
+    - Examples: `components`, `unit`
+    - Good for matching files in specific directories regardless of depth
 
-- `extension`: The file extension.
-    - Example: `js`
+- `basename`: The file name including extension
+    - Examples: `Button.js`, `UserTest.php`
+    - Perfect for filtering by full filename
 
-- `filename`: The file name without extension.
-    - Example: `Button`
+- `extension`: The file extension without the dot
+    - Examples: `js`, `php`, `md`
+    - Ideal for filtering by file type
 
-- `contents`: The full contents of the file.
-    - Allows filtering based on file content.
+- `filename`: The file name without extension
+    - Examples: `Button`, `UserTest`
+    - Useful when extension doesn't matter
 
-- `contents_slice`: The first 256 characters of the file contents.
-    - Useful for efficiently checking file headers or initial content without loading the full file.
-    - Example: Check if a file is ASCII text:
+### Content-based Fields
+
+- `contents`: The complete file contents
+    - Usage: Full text search and pattern matching
+    - Note: Can be slow for large files
+    - Example: Find files containing copyright notices
+      ```json
+      ["contents", "contains", "Copyright (c)"]
+      ```
+
+- `contents_slice`: First 256 characters of the file
+    - Usage: Quick header checks or file type detection
+    - More efficient than full contents search
+    - Example: Check if file is ASCII text
       ```json
       ["contents_slice", "isAscii"]
       ```
 
-- `size`: The size of the file in bytes.
-    - Allows filtering based on file size thresholds.
-    - Example: Include files less than 1MB:
-      ```json
-      ["size", "<", "1 MB"]    
-      ```
+### Metadata Fields
 
-- `mtime`: The modification time of the file as a Unix timestamp.
-    - Allows filtering based on when files were last modified.
-    - Example: Include files modified in the last week:
+- `size`: File size in bytes
+    - Supports human-readable formats
+    - Examples:
+      ```json
+      ["size", "<", "1 MB"]
+      ["size", ">", "500 KB"]
+      ["size", "<=", "2.5 GB"]
+      ```
+    - Supported units: B, KB, MB, GB, TB
+    - Also supports binary units: KiB, MiB, GiB, TiB
+
+- `mtime`: File modification time as Unix timestamp
+    - Supports human-readable date strings
+    - Examples:
       ```json
       ["mtime", ">", "1 week ago"]
+      ["mtime", "<", "2024-01-01"]
+      ["mtime", ">=", "last month"]
       ```
+    - Uses Laravel's Carbon for date parsing
 
-- `mimeType`: The MIME type of the file.
-    - Allows filtering based on file type as determined by the content.
-    - Example: Exclude image files:
-      ```json  
+- `mimeType`: File MIME type detected from content
+    - Examples:
+      ```json
+      ["mimeType", "startsWith", "text/"]
+      ["mimeType", "=", "application/json"]
       ["mimeType", "notStartsWith", "image/"]
       ```
 
 ## Operations
 
-Operations are used to compare fields against values. Ctree supports a wide variety of operations for powerful filtering:
+### Comparison Operations
 
-### Comparison
-- `=`, `!=`: Check for equality/inequality
-- `>`, `>=`, `<`, `<=`: Compare ordered values
-    - Example: Include files larger than 10KB but less than 1MB:
-      ```json
-      [
-        ["size", ">", "10 KB"],
-        ["size", "<", "1 MB"]
-      ]
-      ```
+- Basic Comparisons
+    - `=`: Exact equality
+    - `!=`: Inequality
+    - `>`: Greater than
+    - `>=`: Greater than or equal
+    - `<`: Less than
+    - `<=`: Less than or equal
 
-### String
-- `startsWith`, `endsWith`, `contains`: Check if a string starts with, ends with, or contains a substring
-    - Example: Include JS and TS files in src directory:
+- Array Operations
+    - `oneOf`: Value matches any array element
       ```json
-      [
-        ["folder", "startsWith", "src"], 
-        ["extension", "oneOf", ["js", "ts"]]
-      ]  
+      ["extension", "oneOf", ["js", "ts", "jsx", "tsx"]]
       ```
-- Regex: `regex`: Match a regular expression
-    - Example: Exclude minified files:
+    - `notOneOf`: Value matches no array elements
       ```json
-      ["basename", "notRegex", "\\.min\\.(js|css)$"]   
-      ```
-- Glob: `glob`: Match a glob pattern
-    - Example: Include Markdown files in docs:
-      ```json
-      ["path", "glob", "docs/**/*.md"]
+      ["extension", "notOneOf", ["exe", "dll", "so"]]
       ```
 
-### Array
-- `oneOf`: Check if a value is one of an array
-    - Example: Include common web image formats:
+### String Operations
+
+- Basic String Matching
+    - `startsWith`: String starts with prefix
+    - `endsWith`: String ends with suffix
+    - `contains`: String contains substring
+    - `notStartsWith`: String doesn't start with prefix
+    - `notEndsWith`: String doesn't end with suffix
+    - `notContains`: String doesn't contain substring
+
+- Pattern Matching
+    - `regex`: Matches regular expression
       ```json
-      ["extension", "oneOf", ["jpg", "png", "gif", "webp"]]
+      ["basename", "regex", "^test.*\\.js$"]
       ```
-- `notOneOf`: Check if a value is not in an array
-    - Example: Exclude certain file extensions:
+    - `notRegex`: Doesn't match regular expression
+    - `glob`: Matches glob pattern
       ```json
-      ["basename", "notOneOf", ["py", "rb", "java"]]
+      ["path", "glob", "src/**/*.{js,ts}"]
       ```
+    - `fnmatch`: Matches shell-style wildcards
 
 ### File Type Checks
-- `isAscii`, `isJson`, `isUrl`, `isUuid`, `isUlid`: Check if a string is valid ASCII, JSON, URL, UUID, or ULID
 
-### Negation
-Any operation can be negated by prefixing with `not`:
-- `notContains`, `notEndsWith`, `notRegex`, `notIsAscii` etc.
+- Content Validation
+    - `isAscii`: File contains only ASCII characters
+    - `isJson`: File contains valid JSON
+    - `isUrl`: String is a valid URL
+    - `isUuid`: String is a valid UUID
+    - `isUlid`: String is a valid ULID
 
-## String Operations
-Ctree leverages Laravel's `Str` class, providing a huge number of convenient string manipulation functions. All are available, but you'll mostly want to use boolean operations like `startsWith`, `contains`, etc.
+### Compound Operations
 
-See the [Laravel String documentation](https://laravel.com/docs/11.x/strings#strings-method-list) for a full list of available string operations.
+- Multiple conditions use AND logic within a ruleset:
+  ```json
+  [
+    ["folder", "startsWith", "src"],
+    ["extension", "oneOf", ["js", "ts"]],
+    ["size", "<", "1 MB"]
+  ]
+  ```
+
+- Different rulesets use OR logic:
+  ```json
+  {
+    "rules": [
+      [
+        ["extension", "=", "js"]
+      ],
+      [
+        ["extension", "=", "ts"]
+      ]
+    ]
+  }
+  ```
+
+### Operation Modifiers
+
+- Any operation can be negated with `not` prefix:
+    - `notContains`
+    - `notStartsWith`
+    - `notEndsWith`
+    - `notRegex`
+    - `notIsAscii`
+
+- Plural variants for multiple values:
+    - `startsWithAny`: Matches any prefix
+    - `endsWithAny`: Matches any suffix
+    - `containsAny`: Contains any substring
+    - All support array input:
+      ```json
+      ["folder", "startsWithAny", ["src/", "test/", "docs/"]]
+      ```
+
+### String Operations
+
+Ctree leverages Laravel's `Str` class for string operations. These operations are used for filtering files based on true/false conditions.
+
+See the [Laravel String documentation](https://laravel.com/docs/11.x/strings#strings-method-list) for a complete list of available string operations.
