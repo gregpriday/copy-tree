@@ -20,10 +20,7 @@ class CopyTreeCommand extends Command
     {
         $rulesetManager = new RulesetManager(getcwd());
         $rulesetNames = $rulesetManager->getAvailableRulesets();
-        $workspaceNames = $rulesetManager->getAvailableWorkspaces();
-
         $rulesetDescription = 'Ruleset to apply. Available options: '.implode(', ', $rulesetNames).'. Default: auto';
-        $workspaceDescription = 'Workspace to use. Available options: '.implode(', ', $workspaceNames);
 
         $this
             ->setName('app:copy-tree')
@@ -40,7 +37,6 @@ class CopyTreeCommand extends Command
 
             // Filtering options
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
-            ->addOption('workspace', 'w', InputOption::VALUE_OPTIONAL, $workspaceDescription)
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
 
@@ -84,7 +80,6 @@ class CopyTreeCommand extends Command
         $path = $input->getArgument('path') ?? getcwd();
         $filters = $input->getOption('filter');
         $rulesetOption = $input->getOption('ruleset');
-        $workspace = $input->getOption('workspace');
         $noCache = $input->getOption('no-cache');
         $modifiedOnly = $input->getOption('modified');
         $changes = $input->getOption('changes');
@@ -119,7 +114,7 @@ class CopyTreeCommand extends Command
             } elseif ($rulesetOption === 'none') {
                 $ruleset = $rulesetManager->createEmptyRuleset();
             } else {
-                $ruleset = $rulesetManager->getRuleset($rulesetOption, $workspace);
+                $ruleset = $rulesetManager->getRuleset($rulesetOption);
             }
 
             // Get AI filter description if requested

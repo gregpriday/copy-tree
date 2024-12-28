@@ -172,7 +172,6 @@ Ctree uses a powerful and flexible ruleset system to determine which files to in
 1. **Configuration Directory**: Ctree automatically creates a `.ctree` directory in your project for storing ruleset configurations.
 2. **Multiple Named Rulesets**: Define multiple rulesets for different purposes (e.g., `frontend.json`, `backend.json`, `docs.json`).
 3. **Project Auto-detection**: Ctree automatically detects and applies appropriate rulesets for known project types (currently Laravel and SvelteKit).
-4. **Workspaces:** Define workspaces to combine rulesets and add additional rules.
 
 **Example ruleset (`.ctree/my-ruleset.json`):**
 

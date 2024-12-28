@@ -43,93 +43,52 @@ class CopyTreeCommandTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_execute_with_workspace(): void
+    public function test_basic_directory_copy(): void
     {
-        // Create a temporary workspace configuration
-        $rulesetDir = self::PROJECT_ROOT.'.ctree';
-        if (! is_dir($rulesetDir)) {
-            mkdir($rulesetDir);
-        }
-
-        $workspaceFile = $rulesetDir.'/workspaces.json';
-        $workspaceContent = json_encode([
-            'workspaces' => [
-                'test-workspace' => [
-                    'rules' => [
-                        [
-                            ['folder', 'startsWith', 'subfolder1'],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        file_put_contents($workspaceFile, $workspaceContent);
-
         $this->commandTester->execute([
             'path' => self::TEST_DIR,
-            '--workspace' => 'test-workspace',
             '--display' => true,
         ]);
 
         $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('subfolder1', $output);
-        $this->assertStringNotContainsString('subfolder2', $output);
 
-        // Clean up
-        unlink($workspaceFile);
-        rmdir($rulesetDir);
-    }
-
-    public function test_execute_with_workspace_and_format(): void
-    {
-        // Create a temporary workspace configuration
-        $rulesetDir = self::PROJECT_ROOT.'.ctree';
-        if (! is_dir($rulesetDir)) {
-            mkdir($rulesetDir);
-        }
-
-        $workspaceFile = $rulesetDir.'/workspaces.json';
-        $workspaceContent = json_encode([
-            'workspaces' => [
-                'test-workspace' => [
-                    'rules' => [
-                        [
-                            ['extension', '=', 'txt'],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        file_put_contents($workspaceFile, $workspaceContent);
-
-        $this->commandTester->execute([
-            'path' => self::TEST_DIR,
-            '--workspace' => 'test-workspace',
-            '--format' => 'gpt',
-            '--display' => true,
-        ]);
-
-        $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('```', $output);
+        // Check all expected files are present
         $this->assertStringContainsString('test1.txt', $output);
         $this->assertStringContainsString('test2.txt', $output);
-        $this->assertStringNotContainsString('readme.md', $output);
+        $this->assertStringContainsString('readme.md', $output);
+        $this->assertStringContainsString('notes.md', $output);
+        $this->assertStringContainsString('test.php', $output);
 
-        // Clean up
-        unlink($workspaceFile);
-        rmdir($rulesetDir);
+        // Check directory structure
+        $this->assertStringContainsString('subfolder1', $output);
+        $this->assertStringContainsString('subfolder2', $output);
     }
 
-    public function test_execute_with_nonexistent_workspace(): void
+    public function test_display_tree_only(): void
     {
         $this->commandTester->execute([
             'path' => self::TEST_DIR,
-            '--workspace' => 'nonexistent-workspace',
+            '--only-tree' => true,
+            '--display' => true,
         ]);
 
         $output = $this->commandTester->getDisplay();
-        $this->assertStringContainsString('Workspace "nonexistent-workspace" not found', $output);
+
+        // Check directory structure is present (without caring about prefix)
+        $this->assertStringContainsString('subfolder1', $output);
+        $this->assertStringContainsString('subfolder2', $output);
+
+        // Check file names are present
+        $this->assertStringContainsString('test1.txt', $output);
+        $this->assertStringContainsString('test2.txt', $output);
+        $this->assertStringContainsString('readme.md', $output);
+        $this->assertStringContainsString('notes.md', $output);
+        $this->assertStringContainsString('test.php', $output);
+
+        // Check content is not included
+        $this->assertStringNotContainsString('Test content 1', $output);
+        $this->assertStringNotContainsString('Test content 2', $output);
+        $this->assertStringNotContainsString('Test readme', $output);
+        $this->assertStringNotContainsString('Test notes', $output);
     }
 }

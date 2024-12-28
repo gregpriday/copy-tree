@@ -5,7 +5,6 @@ namespace GregPriday\CopyTree\Tests\Unit;
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
-use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class RulesetManagerTest extends TestCase
@@ -52,12 +51,6 @@ class RulesetManagerTest extends TestCase
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function test_get_ruleset_with_non_existent_workspace(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->manager->getRuleset('auto', 'nonexistent');
-    }
-
     public function test_create_empty_ruleset(): void
     {
         $ruleset = $this->manager->createEmptyRuleset();
@@ -98,12 +91,6 @@ class RulesetManagerTest extends TestCase
         $rulesets = $this->manager->getAvailableRulesets();
         $this->assertIsArray($rulesets);
         $this->assertContains('auto', $rulesets);
-    }
-
-    public function test_get_available_workspaces(): void
-    {
-        $workspaces = $this->manager->getAvailableWorkspaces();
-        $this->assertIsArray($workspaces);
     }
 
     private function removeDirectory(string $dir): void

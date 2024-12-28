@@ -2,8 +2,6 @@
 
 namespace GregPriday\CopyTree\Ruleset;
 
-use GregPriday\CopyTree\Workspace\WorkspaceManager;
-use GregPriday\CopyTree\Workspace\WorkspaceResolver;
 use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -14,34 +12,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  */
 class RulesetManager
 {
-    public readonly WorkspaceManager $workspaceManager;
-
-    public readonly WorkspaceResolver $workspaceResolver;
-
     public function __construct(
         private string $basePath,
         private ?SymfonyStyle $io = null
-    ) {
-        $this->workspaceManager = new WorkspaceManager($basePath);
-        $this->workspaceResolver = new WorkspaceResolver($this);
-    }
+    ) {}
 
-    public function getRuleset(string $rulesetOption, ?string $workspace = null): RulesetFilter
+    public function getRuleset(string $rulesetOption): RulesetFilter
     {
-        // Check for workspace first
-        if ($workspace !== null) {
-            if (! $this->workspaceManager->hasWorkspace($workspace)) {
-                throw new InvalidArgumentException(sprintf('Workspace "%s" not found.', $workspace));
-            }
-
-            $workspaceConfig = $this->workspaceManager->getWorkspace($workspace);
-            if ($this->io) {
-                $this->io->writeln(sprintf('Using workspace: %s', $workspace), SymfonyStyle::VERBOSITY_VERBOSE);
-            }
-
-            return $this->workspaceResolver->resolveWorkspace($workspaceConfig);
-        }
-
         if ($rulesetOption === 'none') {
             if ($this->io) {
                 $this->io->writeln('Using no ruleset', SymfonyStyle::VERBOSITY_VERBOSE);
@@ -133,11 +110,6 @@ class RulesetManager
         array_unshift($rulesets, 'auto');
 
         return array_unique($rulesets);
-    }
-
-    public function getAvailableWorkspaces(): array
-    {
-        return $this->workspaceManager->getAvailableWorkspaces();
     }
 
     public function createRulesetFromGlobs(array $globs): RulesetFilter
