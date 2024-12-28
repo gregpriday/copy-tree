@@ -94,7 +94,7 @@ class GitStatusChecker
     }
 
     /**
-     * Get list of files that have changed between two commits
+     * Get list of files that have changed between two commits (inclusive)
      *
      * @return array<string> Array of changed file paths
      */
@@ -113,8 +113,18 @@ class GitStatusChecker
         }
 
         try {
-            // Get the diff between commits
-            $output = $this->repository->execute('diff', '--name-only', $fromCommit, $toCommit);
+            // Check if fromCommit has a parent
+            try {
+                // Try to get the parent commit
+                $parentOutput = $this->repository->execute('rev-parse', $fromCommit.'^');
+                $parentCommit = is_array($parentOutput) ? trim($parentOutput[0]) : trim($parentOutput);
+            } catch (\Exception) {
+                // If no parent (e.g., it's the first commit), use a special Git syntax
+                $parentCommit = $fromCommit.'^{tree}';
+            }
+
+            // Get the diff using the parent commit to include changes in fromCommit
+            $output = $this->repository->execute('diff', '--name-only', $parentCommit, $toCommit);
 
             if (is_array($output)) {
                 return array_filter($output);
