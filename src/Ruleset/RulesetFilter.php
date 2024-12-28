@@ -2,15 +2,12 @@
 
 namespace GregPriday\CopyTree\Ruleset;
 
-use finfo;
 use Generator;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use GregPriday\CopyTree\Ruleset\Rules\FileAttributeExtractor;
+use GregPriday\CopyTree\Ruleset\Rules\Rule;
+use GregPriday\CopyTree\Ruleset\Rules\RuleEvaluator;
 use InvalidArgumentException;
 use SplFileInfo;
-use Symfony\Component\Finder\Glob;
 
 /**
  * Applies ruleset filters to determine which files to include or exclude.
@@ -20,6 +17,10 @@ use Symfony\Component\Finder\Glob;
 class RulesetFilter
 {
     private string $basePath;
+
+    private RuleEvaluator $ruleEvaluator;
+
+    private FileAttributeExtractor $attributeExtractor;
 
     private array $includeRuleSets = [];
 
@@ -32,6 +33,8 @@ class RulesetFilter
     public function __construct(string $basePath)
     {
         $this->basePath = rtrim(realpath($basePath), '/');
+        $this->ruleEvaluator = new RuleEvaluator($this->basePath);
+        $this->attributeExtractor = new FileAttributeExtractor($this->basePath);
     }
 
     public static function fromJson(string $jsonString, string $basePath): self
@@ -50,13 +53,13 @@ class RulesetFilter
 
         if (isset($data['rules'])) {
             foreach ($data['rules'] as $ruleSet) {
-                $engine->addIncludeRuleSet($ruleSet);
+                $engine->addIncludeRuleSet(self::convertToRules($ruleSet));
             }
         }
 
         if (isset($data['globalExcludeRules'])) {
             foreach ($data['globalExcludeRules'] as $rule) {
-                $engine->addGlobalExcludeRule($rule);
+                $engine->addGlobalExcludeRule(Rule::fromArray($rule));
             }
         }
 
@@ -72,6 +75,27 @@ class RulesetFilter
         return $engine;
     }
 
+    /**
+     * Convert array-based rules to Rule objects
+     *
+     * @param  array  $rules  Array of rule arrays
+     * @return array<Rule> Array of Rule objects
+     */
+    private static function convertToRules(array $rules): array
+    {
+        return array_map(function ($rule) {
+            // Handle OR conditions
+            if (is_array($rule) && isset($rule[0]) && $rule[0] === 'OR') {
+                return [
+                    'type' => 'OR',
+                    'rules' => array_map(fn ($r) => Rule::fromArray($r), $rule[1]),
+                ];
+            }
+
+            return Rule::fromArray($rule);
+        }, $rules);
+    }
+
     public function addIncludeRuleSet(array $rules): self
     {
         $this->includeRuleSets[] = $rules;
@@ -79,7 +103,7 @@ class RulesetFilter
         return $this;
     }
 
-    public function addGlobalExcludeRule(array $rule): self
+    public function addGlobalExcludeRule(Rule $rule): self
     {
         $this->globalExcludeRules[] = $rule;
 
@@ -103,7 +127,7 @@ class RulesetFilter
     /**
      * Get filtered files using a generator approach.
      *
-     * @return Generator<string> A generator yielding relative file paths that match the ruleset
+     * @return Generator<array{path: string, file: SplFileInfo}>
      */
     public function getFilteredFiles(): Generator
     {
@@ -141,7 +165,7 @@ class RulesetFilter
     private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
         // Always skip images
-        if ($this->isImage($file)) {
+        if ($this->attributeExtractor->isImage($file)) {
             return false;
         }
 
@@ -157,7 +181,7 @@ class RulesetFilter
 
         // Check global exclude rules
         foreach ($this->globalExcludeRules as $rule) {
-            if ($this->applyRule($file, $rule)) {
+            if ($this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return false;
             }
         }
@@ -179,11 +203,11 @@ class RulesetFilter
     private function matchesAllRules(SplFileInfo $file, array $rules): bool
     {
         foreach ($rules as $rule) {
-            if (is_array($rule) && isset($rule[0]) && $rule[0] === 'OR') {
-                if (! $this->matchesAnyRule($file, $rule[1])) {
+            if (isset($rule['type']) && $rule['type'] === 'OR') {
+                if (! $this->matchesAnyRule($file, $rule['rules'])) {
                     return false;
                 }
-            } elseif (! $this->applyRule($file, $rule)) {
+            } elseif (! $this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return false;
             }
         }
@@ -194,7 +218,7 @@ class RulesetFilter
     private function matchesAnyRule(SplFileInfo $file, array $rules): bool
     {
         foreach ($rules as $rule) {
-            if ($this->applyRule($file, $rule)) {
+            if ($this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return true;
             }
         }
@@ -202,132 +226,8 @@ class RulesetFilter
         return false;
     }
 
-    private function applyRule(SplFileInfo $file, array $rule): bool
-    {
-        [$field, $operator, $value] = $rule;
-        $fieldValue = $this->getFieldValue($file, $field);
-
-        $isNegation = Str::startsWith($operator, 'not');
-        $baseOperator = $isNegation ? Str::camel(Str::after($operator, 'not')) : $operator;
-
-        $result = $this->compareValues($fieldValue, $value, $baseOperator);
-
-        $comparisonResult = match ($baseOperator) {
-            '>' => $result > 0,
-            '>=' => $result >= 0,
-            '<' => $result < 0,
-            '<=' => $result <= 0,
-            '=' => $result === 0,
-            '!=' => $result !== 0,
-            'oneOf' => in_array($fieldValue, $value),
-            'regex' => preg_match($value, $fieldValue) === 1,
-            'glob' => preg_match(Glob::toRegex($value), $fieldValue) === 1,
-            'fnmatch' => fnmatch($value, $fieldValue),
-            default => $this->handleStrOperations($baseOperator, $fieldValue, $value),
-        };
-
-        return $isNegation ? ! $comparisonResult : $comparisonResult;
-    }
-
-    private function handleStrOperations(string $operator, mixed $fieldValue, mixed $value): bool
-    {
-        if (method_exists(Str::class, $operator)) {
-            return Str::$operator($fieldValue, $value);
-        }
-
-        if (Str::endsWith($operator, ['Any', 'All'])) {
-            $baseOperator = Str::substr($operator, 0, -3);
-            if (method_exists(Str::class, $baseOperator)) {
-                $suffix = Str::substr($operator, -3);
-                if (! is_array($value)) {
-                    throw new InvalidArgumentException("Value must be an array for {$operator} operation");
-                }
-                $checkFunction = function ($v) use ($baseOperator, $fieldValue) {
-                    return Str::$baseOperator($fieldValue, $v);
-                };
-                $collection = new Collection($value);
-
-                return $suffix === 'Any' ? $collection->contains($checkFunction)
-                    : $collection->every($checkFunction);
-            }
-        }
-
-        throw new InvalidArgumentException("Unsupported operator: $operator");
-    }
-
-    private function getFieldValue(SplFileInfo $file, string $field): mixed
-    {
-        $relativePath = $this->getRelativePath($file);
-        $pathInfo = pathinfo($relativePath);
-
-        return match ($field) {
-            'folder' => dirname($relativePath),
-            'path' => $relativePath,
-            'dirname' => $pathInfo['dirname'],
-            'basename' => $pathInfo['basename'],
-            'extension' => $pathInfo['extension'] ?? '',
-            'filename' => $pathInfo['filename'],
-            'contents' => file_get_contents($file->getPathname()),
-            'contents_slice' => substr(file_get_contents($file->getPathname()), 0, 256),
-            'size' => $file->getSize(),
-            'mtime' => $file->getMTime(),
-            'mimeType' => $this->getMimeType($file),
-            default => throw new InvalidArgumentException("Unsupported field: $field"),
-        };
-    }
-
     private function getRelativePath(SplFileInfo $file): string
     {
         return str_replace($this->basePath.'/', '', $file->getRealPath());
-    }
-
-    private function isImage(SplFileInfo $file): bool
-    {
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'tiff', 'ico'];
-
-        return in_array(strtolower($file->getExtension()), $imageExtensions);
-    }
-
-    private function getMimeType(SplFileInfo $file): string
-    {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-
-        return $finfo->file($file->getPathname());
-    }
-
-    private function compareValues($a, $b, string $operator): int
-    {
-        // If comparing dates
-        if (is_numeric($a) && is_string($b) && strtotime($b) !== false) {
-            $dateA = Carbon::createFromTimestamp($a);
-            $dateB = Carbon::parse($b);
-
-            return $dateA->compare($dateB);
-        }
-
-        // If comparing file sizes
-        if (is_numeric($a) && is_string($b) && preg_match('/^\s*((?:\d+\.?\d*|\.\d+))\s*([kmg]i?b?)?\s*$/i', $b, $matches)) {
-            $size = (float) $matches[1];
-            $unit = $matches[2] ?? '';
-            $sizeInBytes = $this->convertToBytes($size, $unit);
-
-            return $a <=> $sizeInBytes;
-        }
-
-        // Default comparison
-        return $a <=> $b;
-    }
-
-    private function convertToBytes(float $size, string $unit): float
-    {
-        return match (strtolower($unit)) {
-            'k' => $size * 1000,
-            'ki' => $size * 1024,
-            'm' => $size * 1000000,
-            'mi' => $size * 1024 * 1024,
-            'g' => $size * 1000000000,
-            'gi' => $size * 1024 * 1024 * 1024,
-            default => $size,
-        };
     }
 }

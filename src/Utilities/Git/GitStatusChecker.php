@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\Utilities\Git;
 
 use CzProject\GitPhp\Git;
 use CzProject\GitPhp\GitRepository;

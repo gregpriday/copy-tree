@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetFilter;
-use GregPriday\CopyTree\Utilities\GitStatusChecker;
+use GregPriday\CopyTree\Utilities\Git\GitStatusChecker;
 use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFileFilter;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;

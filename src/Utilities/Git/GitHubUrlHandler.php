@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\Utilities\Git;
 
 use InvalidArgumentException;
 use RuntimeException;

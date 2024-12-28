@@ -3,7 +3,7 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Ruleset\RulesetManager;
-use GregPriday\CopyTree\Utilities\GitHubUrlHandler;
+use GregPriday\CopyTree\Utilities\Git\GitHubUrlHandler;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
