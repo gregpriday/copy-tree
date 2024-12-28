@@ -4,6 +4,20 @@ This document provides a variety of ruleset examples for different types of code
 
 For a complete guide on writing rulesets, see the [Writing Rulesets](./rulesets.md) documentation.
 
+## Table of Contents
+
+1. [Basic Web Project](#1-basic-web-project)
+2. [Python Data Science Project](#2-python-data-science-project)
+3. [Java Maven Project](#3-java-maven-project)
+4. [Node.js Express API](#4-nodejs-express-api)
+5. [React Native Mobile App](#5-react-native-mobile-app)
+6. [Django Web Application](#6-django-web-application)
+7. [Golang Microservice](#7-golang-microservice)
+8. [Unity Game Project](#8-unity-game-project)
+9. [Ruby on Rails Application](#9-ruby-on-rails-application)
+10. [Flutter Mobile App](#10-flutter-mobile-app)
+11. [Common Patterns](#11-common-patterns)
+
 ## 1. Basic Web Project
 
 Description: A simple ruleset for a typical web project, including HTML, CSS, and JavaScript files.
@@ -259,6 +273,66 @@ Description: A ruleset for a Flutter mobile app project, focusing on Dart files 
   "always": {
     "include": ["pubspec.yaml", "lib/main.dart", "README.md"]
   }
+}
+```
+
+## 11. Common Patterns
+
+Here are some frequently used patterns that you can incorporate into any ruleset:
+
+### Cross-Platform Path Handling
+```json
+{
+  "globalExcludeRules": [
+    ["folder", "containsAny", ["bin", "obj", "out", "build", "dist"]],
+    ["extension", "oneOf", ["exe", "dll", "so", "dylib"]]
+  ]
+}
+```
+
+### Security-Focused Exclusions
+```json
+{
+  "globalExcludeRules": [
+    ["basename", "oneOf", [".env", "secrets.json", "credentials.json"]],
+    ["extension", "oneOf", ["pem", "key", "pfx", "p12"]],
+    ["folder", "contains", "secrets"]
+  ]
+}
+```
+
+### Development Files Only
+```json
+{
+  "rules": [
+    [
+      ["extension", "oneOf", ["js", "ts", "jsx", "tsx", "vue"]],
+      ["folder", "startsWith", "src"]
+    ]
+  ],
+  "globalExcludeRules": [
+    ["folder", "contains", "test"],
+    ["extension", "oneOf", ["min.js", "bundle.js"]]
+  ]
+}
+```
+
+### Documentation Files Only
+```json
+{
+  "rules": [
+    [
+      ["extension", "oneOf", ["md", "rst", "txt"]],
+      ["folder", "startsWith", "docs"]
+    ],
+    [
+      ["basename", "=", "README.md"]
+    ]
+  ],
+  "globalExcludeRules": [
+    ["folder", "contains", "draft"],
+    ["basename", "startsWith", "_"]
+  ]
 }
 ```
 
