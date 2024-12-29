@@ -109,6 +109,13 @@ class JinaCodeSearch extends BaseJinaService
         // Sort results by relevance score
         usort($results, fn ($a, $b) => $b['relevance_score'] <=> $a['relevance_score']);
 
+        $results = array_map(function ($result) {
+            return [
+                'file' => $result['file']['path'],
+                'relevance_score' => $result['relevance_score'],
+            ];
+        }, $results);
+
         // Return all results with threshold indicator
         return [
             'files' => array_map(function ($result) {
@@ -138,7 +145,7 @@ class JinaCodeSearch extends BaseJinaService
             $preview = mb_substr($content, 0, $this->previewLength);
 
             // Format the content with the path as context
-            return "File: {$path}\n\nContent:\n{$preview}";
+            return "File Path: {$path}\n\nContent:\n{$preview}";
 
         } catch (\Exception $e) {
             throw new RuntimeException("Failed to read file {$path}: {$e->getMessage()}");

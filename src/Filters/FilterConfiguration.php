@@ -2,7 +2,6 @@
 
 namespace GregPriday\CopyTree\Filters;
 
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
 use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 
@@ -12,6 +11,7 @@ class FilterConfiguration
         private readonly ?string $rulesetName,
         private readonly array $globPatterns,
         private readonly ?string $aiFilterDescription,
+        private readonly ?string $search,
         private readonly bool $modifiedOnly,
         private readonly ?string $changes,
         private readonly int $maxDepth,
@@ -25,6 +25,7 @@ class FilterConfiguration
             globPatterns: (array) $input->getOption('filter'),
             aiFilterDescription: $input->getOption('ai-filter') !== false ?
                 ($input->getOption('ai-filter') ?: null) : null,
+            search: $input->getOption('search'),
             modifiedOnly: $input->getOption('modified'),
             changes: $input->getOption('changes'),
             maxDepth: (int) $input->getOption('depth'),
@@ -47,6 +48,11 @@ class FilterConfiguration
         return $this->aiFilterDescription;
     }
 
+    public function getSearch()
+    {
+        return $this->search;
+    }
+
     public function isModifiedOnly(): bool
     {
         return $this->modifiedOnly;
@@ -67,7 +73,8 @@ class FilterConfiguration
         return $this->maxLines;
     }
 
-    public function validate(): void {
+    public function validate(): void
+    {
         if ($this->modifiedOnly && $this->changes !== null) {
             throw new RuntimeException('The --modified and --changes options cannot be used together');
         }
@@ -81,4 +88,3 @@ class FilterConfiguration
         }
     }
 }
-

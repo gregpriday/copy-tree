@@ -33,8 +33,9 @@ class FilterPipelineConfiguration
             'modified' => $this->filterConfig->isModifiedOnly(),
             'changes' => $this->filterConfig->getChanges(),
             'ai-filter' => $this->filterConfig->getAiFilterDescription(),
+            'search' => $this->filterConfig->getSearch(),
             'max-depth' => $this->filterConfig->getMaxDepth(),
-            'max-lines' => $this->filterConfig->getMaxLines()
+            'max-lines' => $this->filterConfig->getMaxLines(),
         ];
     }
 }

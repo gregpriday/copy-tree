@@ -48,8 +48,12 @@ class FilterPipelineFactory
         }
 
         // Add AI filters if requested
-        if (isset($options['ai-filter'])) {
+        if (! empty($options['ai-filter'])) {
             $this->addAiFilters($pipeline, $options['ai-filter']);
+        }
+
+        if (! empty($options['search'])) {
+            $this->addSearchFilter($pipeline, $options['search']);
         }
 
         return $pipeline;
@@ -137,15 +141,35 @@ class FilterPipelineFactory
                 );
             }
         }
+    }
 
-        // Add Jina filter with slightly lower threshold
+    /**
+     * Add Jina AI search filter to the pipeline.
+     *
+     * @param  FilterPipelineManager  $pipeline  The filter pipeline
+     * @param  string|bool  $query  The search query
+     */
+    private function addSearchFilter(
+        FilterPipelineManager $pipeline,
+        string $query
+    ): void {
+        // If no specific query provided, the IO interface should have prompted for one
+        if (empty($query) && $pipeline->getIo()) {
+            $query = $pipeline->getIo()->ask('Enter your search query');
+        }
+
+        if (empty($query)) {
+            return;
+        }
+
+        // Add Jina search filter
         try {
-            $jinaFilter = new JinaCodeSearchFilter($description, 0.7);
-            $pipeline->addFilter($jinaFilter);
+            $searchFilter = new JinaCodeSearchFilter($query);
+            $pipeline->addFilter($searchFilter);
         } catch (\Exception $e) {
             if ($pipeline->getIo()) {
                 $pipeline->getIo()->warning(
-                    "Failed to create Jina filter: {$e->getMessage()}"
+                    "Failed to create Jina search filter: {$e->getMessage()}"
                 );
             }
         }

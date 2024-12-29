@@ -43,6 +43,7 @@ class CopyTreeCommand extends Command
             ->addOption('ruleset', 'r', InputOption::VALUE_OPTIONAL, $rulesetDescription, 'auto')
             ->addOption('filter', 'f', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Filter files using glob patterns on the relative path. Can be specified multiple times.')
             ->addOption('ai-filter', 'a', InputOption::VALUE_OPTIONAL, 'Filter files using AI based on a natural language description', false)
+            ->addOption('search', 's', InputOption::VALUE_OPTIONAL, 'Search for files using a search query string', false)
 
             // Git based filtering
             ->addOption('modified', 'm', InputOption::VALUE_NONE, 'Only include files that have been modified since the last commit')
@@ -51,7 +52,7 @@ class CopyTreeCommand extends Command
             // Output options
             ->addOption('output', 'o', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Outputs to a file. If no filename is provided, creates file in ~/.copytree/files/')
             ->addOption('display', 'i', InputOption::VALUE_NONE, 'Display the output in the console.')
-            ->addOption('stream', 's', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
+            ->addOption('stream', 'S', InputOption::VALUE_NONE, 'Stream output directly (useful for piping)')
             ->addOption('as-reference', 'p', InputOption::VALUE_NONE, 'Copy a reference to a temporary file instead of copying the content directly.')
 
             // GitHub-related options
@@ -72,6 +73,8 @@ class CopyTreeCommand extends Command
                 return $this->handleCacheClearing($io);
             }
 
+            $this->getUserInput($input, $output);
+
             $path = $this->resolvePath($input, $io);
             $filterConfig = $this->createFilterConfiguration($input);
             $pipelineConfig = $this->createPipelineConfiguration($path, $filterConfig, $io);
@@ -85,7 +88,38 @@ class CopyTreeCommand extends Command
 
         } catch (\Exception $e) {
             $this->handleError($e, $input, $io);
+
             return Command::FAILURE;
+        }
+    }
+
+    private function getUserInput(InputInterface $input, OutputInterface $output): void
+    {
+        if ($input->getOption('ai-filter') === null) {
+            $io = new SymfonyStyle($input, $output);
+            $description = $io->ask('Enter a description for the AI filter:', null, function ($value) {
+                if (empty($value)) {
+                    throw new RuntimeException('Description cannot be empty');
+                }
+
+                return $value;
+            });
+
+            $input->setOption('ai-filter', $description);
+        }
+
+        // If the search flag is set, but no query is provided, prompt the user for one
+        if ($input->getOption('search') === null) {
+            $io = new SymfonyStyle($input, $output);
+            $query = $io->ask('Enter a search query:', null, function ($value) {
+                if (empty($value)) {
+                    throw new RuntimeException('Search query cannot be empty');
+                }
+
+                return $value;
+            });
+
+            $input->setOption('search', $query);
         }
     }
 
@@ -94,9 +128,11 @@ class CopyTreeCommand extends Command
         try {
             GitHubUrlHandler::cleanCache();
             $io->success('GitHub repository cache cleared successfully');
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $io->error($e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -120,6 +156,7 @@ class CopyTreeCommand extends Command
 
         $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
         $this->githubHandler = new GitHubUrlHandler($url);
+
         return $this->githubHandler->getFiles();
     }
 
@@ -141,7 +178,7 @@ class CopyTreeCommand extends Command
 
     private function resolveRuleset(RulesetManager $manager, FilterConfiguration $config)
     {
-        if (!empty($config->getGlobPatterns())) {
+        if (! empty($config->getGlobPatterns())) {
             return $manager->createRulesetFromGlobs($config->getGlobPatterns());
         }
 
@@ -169,7 +206,7 @@ class CopyTreeCommand extends Command
     private function handleOutput(InputInterface $input, SymfonyStyle $io, array $result): void
     {
         $outputOption = $input->getOption('output');
-        $useOutput = !empty($outputOption);
+        $useOutput = ! empty($outputOption);
         $outputFile = $useOutput ? (reset($outputOption) ?: '') : null;
 
         $outputManager = new OutputManager(

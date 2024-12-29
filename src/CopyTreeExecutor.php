@@ -2,8 +2,8 @@
 
 namespace GregPriday\CopyTree;
 
-use GregPriday\CopyTree\Filters\FilterPipelineFactory;
 use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
+use GregPriday\CopyTree\Filters\FilterPipelineFactory;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use RuntimeException;
@@ -53,8 +53,8 @@ class CopyTreeExecutor
         $filterConfig = $this->config->getFilterConfig();
         $filterConfig->validate();
 
-        if (!is_dir($this->config->getBasePath())) {
-            throw new RuntimeException('Invalid base path: ' . $this->config->getBasePath());
+        if (! is_dir($this->config->getBasePath())) {
+            throw new RuntimeException('Invalid base path: '.$this->config->getBasePath());
         }
     }
 
@@ -78,7 +78,7 @@ class CopyTreeExecutor
         try {
             return $pipeline->execute($files);
         } catch (\Exception $e) {
-            throw new RuntimeException('Pipeline execution failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Pipeline execution failed: '.$e->getMessage(), 0, $e);
         }
     }
 
@@ -88,12 +88,12 @@ class CopyTreeExecutor
         $treeOutput = FileTreeView::render($filteredFiles);
         $combinedOutput = $treeOutput;
 
-        if (!$this->onlyTree) {
+        if (! $this->onlyTree) {
             $fileContentsOutput = FileContentsView::render(
                 $filteredFiles,
                 $this->config->getFilterConfig()->getMaxLines()
             );
-            $combinedOutput .= "\n\n---\n\n" . $fileContentsOutput;
+            $combinedOutput .= "\n\n---\n\n".$fileContentsOutput;
         }
 
         return [
@@ -106,9 +106,9 @@ class CopyTreeExecutor
     private function handleExecutionError(\Exception $e): void
     {
         if ($this->io) {
-            $this->io->error('Execution failed: ' . $e->getMessage());
+            $this->io->error('Execution failed: '.$e->getMessage());
             $this->io->writeln(
-                'Stack trace: ' . $e->getTraceAsString(),
+                'Stack trace: '.$e->getTraceAsString(),
                 OutputInterface::VERBOSITY_DEBUG
             );
         }
@@ -116,7 +116,7 @@ class CopyTreeExecutor
 
     private function logPipelineConfiguration($pipeline): void
     {
-        if (!$this->io) {
+        if (! $this->io) {
             return;
         }
 

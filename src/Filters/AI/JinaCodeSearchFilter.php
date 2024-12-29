@@ -34,8 +34,8 @@ class JinaCodeSearchFilter implements FileFilterInterface
      */
     public function __construct(
         private readonly string $query,
-        float $relevancyThreshold = 0.75,
-        int $previewLength = 8000,
+        float $relevancyThreshold = 0.5,
+        int $previewLength = 8192,
         int $chunkSize = 20
     ) {
         if ($relevancyThreshold < 0.0 || $relevancyThreshold > 1.0) {
@@ -88,7 +88,7 @@ class JinaCodeSearchFilter implements FileFilterInterface
     private function findFileResult(array $file): ?array
     {
         foreach ($this->searchResults as $result) {
-            if ($result['file']['path'] === $file['path']) {
+            if ($result['file'] === $file['path']) {
                 return $result;
             }
         }
