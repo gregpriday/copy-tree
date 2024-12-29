@@ -2,6 +2,8 @@
 
 namespace GregPriday\CopyTree;
 
+use GregPriday\CopyTree\Filters\FilterConfiguration;
+use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\Git\GitHubUrlHandler;
 use RuntimeException;
@@ -15,6 +17,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class CopyTreeCommand extends Command
 {
     protected static string $defaultName = 'app:copy-tree';
+
+    private ?GitHubUrlHandler $githubHandler = null;
 
     protected function configure(): void
     {
@@ -63,123 +67,134 @@ class CopyTreeCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        // Handle cache clearing
-        if ($input->getOption('clear-cache')) {
-            try {
-                GitHubUrlHandler::cleanCache();
-                $io->success('GitHub repository cache cleared successfully');
-
-                return Command::SUCCESS;
-            } catch (\Exception $e) {
-                $io->error($e->getMessage());
-
-                return Command::FAILURE;
-            }
-        }
-
-        $path = $input->getArgument('path') ?? getcwd();
-        $filters = $input->getOption('filter');
-        $rulesetOption = $input->getOption('ruleset');
-        $noCache = $input->getOption('no-cache');
-        $modifiedOnly = $input->getOption('modified');
-        $changes = $input->getOption('changes');
-
-        // Add after getting the options
-        if ($modifiedOnly && $changes) {
-            throw new RuntimeException('The --modified and --changes options cannot be used together');
-        }
-
         try {
-            // Handle GitHub URLs
-            $githubHandler = null;
-            if (GitHubUrlHandler::isGitHubUrl($path)) {
-                if ($modifiedOnly) {
-                    throw new RuntimeException('The --modified option cannot be used with GitHub URLs');
-                }
-                if ($changes) {
-                    throw new RuntimeException('The --changes option cannot be used with GitHub URLs');
-                }
-
-                $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
-                $githubHandler = new GitHubUrlHandler($path);
-                $path = $githubHandler->getFiles();
+            if ($input->getOption('clear-cache')) {
+                return $this->handleCacheClearing($io);
             }
 
-            $rulesetManager = new RulesetManager($path, $io);
+            $path = $this->resolvePath($input, $io);
+            $filterConfig = $this->createFilterConfiguration($input);
+            $pipelineConfig = $this->createPipelineConfiguration($path, $filterConfig, $io);
 
-            // Determine which ruleset to use
-            if (! empty($filters)) {
-                $filters = is_array($filters) ? $filters : [$filters];
-                $ruleset = $rulesetManager->createRulesetFromGlobs($filters);
-            } elseif ($rulesetOption === 'none') {
-                $ruleset = $rulesetManager->createEmptyRuleset();
-            } else {
-                $ruleset = $rulesetManager->getRuleset($rulesetOption);
-            }
+            $result = $this->executeOperation($input, $io, $pipelineConfig);
 
-            // Get AI filter description if requested
-            $aiFilterDescription = null;
-            if ($input->getOption('ai-filter') !== false) {
-                $aiFilterDescription = $input->getOption('ai-filter') ?: $io->ask('Enter your filtering description');
-                if ($aiFilterDescription) {
-                    $io->writeln('Using AI filter: '.$aiFilterDescription, OutputInterface::VERBOSITY_VERBOSE);
-                }
-            }
-
-            // If using modified files, show verbose message
-            if ($modifiedOnly) {
-                $io->writeln('Filtering modified files since last commit...', OutputInterface::VERBOSITY_VERBOSE);
-            }
-
-            // If using changes between commits, show verbose message
-            if ($changes) {
-                $io->writeln('Filtering files changed between commits...', OutputInterface::VERBOSITY_VERBOSE);
-            }
-
-            // Execute the copy tree operation with filters
-            $executor = new CopyTreeExecutor(
-                path: $path,
-                onlyTree: $input->getOption('only-tree'),
-                aiFilterDescription: $aiFilterDescription,
-                io: $io,
-                maxLines: (int) $input->getOption('max-lines'),
-                modifiedOnly: $modifiedOnly,
-                changes: $changes
-            );
-
-            $result = $executor->execute($ruleset);
-
-            // Process the output option
-            $outputOption = $input->getOption('output');
-            $useOutput = ! empty($outputOption);
-            $outputFile = $useOutput ? (reset($outputOption) ?: '') : null;
-
-            // Handle output
-            $outputManager = new OutputManager(
-                $input->getOption('display'),
-                $outputFile,
-                $input->getOption('stream'),
-                $input->getOption('as-reference')
-            );
-
-            $outputManager->handleOutput($result, $io);
-
-            // Only clean up if --no-cache option is set
-            if ($githubHandler && $noCache) {
-                $githubHandler->cleanup();
-                $io->writeln('Cleaned up temporary repository files', OutputInterface::VERBOSITY_VERBOSE);
-            }
+            $this->handleOutput($input, $io, $result);
+            $this->cleanup($input);
 
             return Command::SUCCESS;
+
         } catch (\Exception $e) {
-            // Clean up if there was an error and --no-cache was set
-            if (isset($githubHandler) && $noCache) {
-                $githubHandler->cleanup();
-            }
-
-            $io->error($e->getMessage());
-
+            $this->handleError($e, $input, $io);
             return Command::FAILURE;
         }
+    }
+
+    private function handleCacheClearing(SymfonyStyle $io): int
+    {
+        try {
+            GitHubUrlHandler::cleanCache();
+            $io->success('GitHub repository cache cleared successfully');
+            return Command::SUCCESS;
+        } catch (\Exception $e) {
+            $io->error($e->getMessage());
+            return Command::FAILURE;
+        }
+    }
+
+    private function resolvePath(InputInterface $input, SymfonyStyle $io): string
+    {
+        $path = $input->getArgument('path') ?? getcwd();
+
+        if (GitHubUrlHandler::isGitHubUrl($path)) {
+            return $this->handleGitHubPath($path, $input, $io);
+        }
+
+        return $path;
+    }
+
+    private function handleGitHubPath(string $url, InputInterface $input, SymfonyStyle $io): string
+    {
+        if ($input->getOption('modified') || $input->getOption('changes')) {
+            throw new RuntimeException('Git options cannot be used with GitHub URLs');
+        }
+
+        $io->writeln('Detected GitHub URL. Cloning repository...', OutputInterface::VERBOSITY_VERBOSE);
+        $this->githubHandler = new GitHubUrlHandler($url);
+        return $this->githubHandler->getFiles();
+    }
+
+    private function createFilterConfiguration(InputInterface $input): FilterConfiguration
+    {
+        return FilterConfiguration::fromInput($input);
+    }
+
+    private function createPipelineConfiguration(
+        string $path,
+        FilterConfiguration $filterConfig,
+        SymfonyStyle $io
+    ): FilterPipelineConfiguration {
+        $rulesetManager = new RulesetManager($path, $io);
+        $ruleset = $this->resolveRuleset($rulesetManager, $filterConfig);
+
+        return new FilterPipelineConfiguration($path, $filterConfig, $ruleset);
+    }
+
+    private function resolveRuleset(RulesetManager $manager, FilterConfiguration $config)
+    {
+        if (!empty($config->getGlobPatterns())) {
+            return $manager->createRulesetFromGlobs($config->getGlobPatterns());
+        }
+
+        if ($config->getRulesetName() === 'none') {
+            return $manager->createEmptyRuleset();
+        }
+
+        return $manager->getRuleset($config->getRulesetName());
+    }
+
+    private function executeOperation(
+        InputInterface $input,
+        SymfonyStyle $io,
+        FilterPipelineConfiguration $config
+    ): array {
+        $executor = new CopyTreeExecutor(
+            config: $config,
+            onlyTree: $input->getOption('only-tree'),
+            io: $io
+        );
+
+        return $executor->execute();
+    }
+
+    private function handleOutput(InputInterface $input, SymfonyStyle $io, array $result): void
+    {
+        $outputOption = $input->getOption('output');
+        $useOutput = !empty($outputOption);
+        $outputFile = $useOutput ? (reset($outputOption) ?: '') : null;
+
+        $outputManager = new OutputManager(
+            $input->getOption('display'),
+            $outputFile,
+            $input->getOption('stream'),
+            $input->getOption('as-reference')
+        );
+
+        $outputManager->handleOutput($result, $io);
+    }
+
+    private function cleanup(InputInterface $input): void
+    {
+        if ($this->githubHandler && $input->getOption('no-cache')) {
+            $this->githubHandler->cleanup();
+        }
+    }
+
+    private function handleError(\Exception $e, InputInterface $input, SymfonyStyle $io): void
+    {
+        if ($this->githubHandler && $input->getOption('no-cache')) {
+            $this->githubHandler->cleanup();
+        }
+
+        $io->error($e->getMessage());
     }
 }

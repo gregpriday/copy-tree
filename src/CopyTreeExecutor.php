@@ -3,31 +3,21 @@
 namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Filters\FilterPipelineFactory;
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use RuntimeException;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-/**
- * Executes the copy tree operation using a pipeline of filters.
- *
- * Manages the process of filtering files through a configurable pipeline,
- * then rendering the tree view and file contents as requested.
- */
 class CopyTreeExecutor
 {
     private FilterPipelineFactory $pipelineFactory;
 
     public function __construct(
-        private readonly string $path,
-        private readonly bool $onlyTree,
-        private readonly ?string $aiFilterDescription = null,
-        private readonly ?SymfonyStyle $io = null,
-        private readonly int $maxLines = 0,
-        private readonly bool $modifiedOnly = false,
-        private readonly ?string $changes = null
+        private readonly FilterPipelineConfiguration $config,
+        private readonly bool $onlyTree = false,
+        private readonly ?SymfonyStyle $io = null
     ) {
         $this->pipelineFactory = new FilterPipelineFactory;
     }
@@ -35,71 +25,75 @@ class CopyTreeExecutor
     /**
      * Execute the copy tree operation.
      *
-     * @param  RulesetFilter  $ruleset  The base ruleset filter
      * @return array{output: string, fileCount: int, files: array} Operation result
      *
      * @throws RuntimeException|\Exception If execution fails
      */
-    public function execute(RulesetFilter $ruleset): array
+    public function execute(): array
     {
-        // Create filter pipeline with all requested filters
-        $pipeline = $this->pipelineFactory->createPipeline(
-            $this->path,
-            [
-                'modified' => $this->modifiedOnly,
-                'changes' => $this->changes,
-                'ai-filter' => $this->aiFilterDescription,
-            ],
-            $ruleset,
-            $this->io
-        );
-
-        // Log pipeline configuration if verbose
-        if ($this->io) {
-            $this->logPipelineConfiguration($pipeline);
-        }
-
         try {
-            // Get initial files from base path
-            $initialFiles = iterator_to_array($ruleset->getFilteredFiles());
+            $this->validateConfiguration();
 
-            // Execute the pipeline
-            $filteredFiles = $pipeline->execute($initialFiles);
+            $pipeline = $this->createPipeline();
+            $this->logPipelineConfiguration($pipeline);
 
-            // Generate output
+            $files = $this->getInitialFiles();
+            $filteredFiles = $this->executeFilterPipeline($pipeline, $files);
+
             return $this->generateOutput($filteredFiles);
 
         } catch (\Exception $e) {
-            if ($this->io) {
-                $this->io->error('Pipeline execution failed: '.$e->getMessage());
-                // Log more details in verbose mode
-                $this->io->writeln(
-                    'Stack trace: '.$e->getTraceAsString(),
-                    OutputInterface::VERBOSITY_DEBUG
-                );
-
-                return $this->generateOutput([]);
-            }
+            $this->handleExecutionError($e);
             throw $e;
         }
     }
 
-    /**
-     * Generate the final output from filtered files.
-     *
-     * @param  array  $filteredFiles  The files that passed through all filters
-     * @return array Operation result with output and stats
-     */
+    private function validateConfiguration(): void
+    {
+        $filterConfig = $this->config->getFilterConfig();
+        $filterConfig->validate();
+
+        if (!is_dir($this->config->getBasePath())) {
+            throw new RuntimeException('Invalid base path: ' . $this->config->getBasePath());
+        }
+    }
+
+    private function createPipeline()
+    {
+        return $this->pipelineFactory->createPipeline(
+            $this->config->getBasePath(),
+            $this->config->toPipelineOptions(),
+            $this->config->getRuleset(),
+            $this->io
+        );
+    }
+
+    private function getInitialFiles(): array
+    {
+        return iterator_to_array($this->config->getRuleset()->getFilteredFiles());
+    }
+
+    private function executeFilterPipeline($pipeline, array $files): array
+    {
+        try {
+            return $pipeline->execute($files);
+        } catch (\Exception $e) {
+            throw new RuntimeException('Pipeline execution failed: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
     private function generateOutput(array $filteredFiles): array
     {
         // Generate the tree view
         $treeOutput = FileTreeView::render($filteredFiles);
         $combinedOutput = $treeOutput;
 
-        // Add file contents if requested
-        if (! $this->onlyTree) {
-            $fileContentsOutput = FileContentsView::render($filteredFiles, $this->maxLines);
-            $combinedOutput .= "\n\n---\n\n".$fileContentsOutput;
+        if (!$this->onlyTree) {
+            $fileContentsOutput = FileContentsView::render(
+                $filteredFiles,
+                $this->config->getFilterConfig()->getMaxLines()
+            );
+            $combinedOutput .= "\n\n---\n\n" . $fileContentsOutput;
         }
 
         return [
@@ -109,11 +103,23 @@ class CopyTreeExecutor
         ];
     }
 
-    /**
-     * Log the pipeline configuration in verbose mode.
-     */
+    private function handleExecutionError(\Exception $e): void
+    {
+        if ($this->io) {
+            $this->io->error('Execution failed: ' . $e->getMessage());
+            $this->io->writeln(
+                'Stack trace: ' . $e->getTraceAsString(),
+                OutputInterface::VERBOSITY_DEBUG
+            );
+        }
+    }
+
     private function logPipelineConfiguration($pipeline): void
     {
+        if (!$this->io) {
+            return;
+        }
+
         if ($pipeline->hasFilters()) {
             $this->io->writeln(
                 'Configured filters:',
