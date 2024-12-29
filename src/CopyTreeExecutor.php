@@ -2,172 +2,140 @@
 
 namespace GregPriday\CopyTree;
 
-use GregPriday\CopyTree\Ruleset\RulesetFilter;
-use GregPriday\CopyTree\Utilities\Git\GitStatusChecker;
-use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFileFilter;
+use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
+use GregPriday\CopyTree\Filters\FilterPipelineFactory;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use RuntimeException;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-/**
- * Executes the copy tree operation, applying rulesets and generating output.
- *
- * Manages the process of filtering files, rendering the tree view and file contents.
- * Can apply ruleset-based, AI-based, and Git-based filtering.
- */
 class CopyTreeExecutor
 {
+    private FilterPipelineFactory $pipelineFactory;
+
     public function __construct(
-        private readonly string $path,
-        private readonly bool $onlyTree,
-        private readonly ?string $aiFilterDescription = null,
-        private readonly ?SymfonyStyle $io = null,
-        private readonly int $maxLines = 0,
-        private readonly bool $modifiedOnly = false,
-        private readonly ?string $changes = null
-    ) {}
+        private readonly FilterPipelineConfiguration $config,
+        private readonly bool $onlyTree = false,
+        private readonly ?SymfonyStyle $io = null
+    ) {
+        $this->pipelineFactory = new FilterPipelineFactory;
+    }
 
-    public function execute(RulesetFilter $ruleset): array
+    /**
+     * Execute the copy tree operation.
+     *
+     * @return array{output: string, fileCount: int, files: array} Operation result
+     *
+     * @throws RuntimeException|\Exception If execution fails
+     */
+    public function execute(): array
     {
-        // First apply the ruleset filter
-        $filteredFiles = iterator_to_array($ruleset->getFilteredFiles());
+        try {
+            $this->validateConfiguration();
 
-        // If changes parameter is set, filter by Git changes between commits
-        if ($this->changes && ! empty($filteredFiles)) {
-            try {
-                $gitChecker = new GitStatusChecker;
+            $pipeline = $this->createPipeline();
+            $this->logPipelineConfiguration($pipeline);
 
-                if (! $gitChecker->isGitRepository($this->path)) {
-                    throw new RuntimeException('Not a Git repository');
-                }
+            $files = $this->getInitialFiles();
+            $filteredFiles = $this->executeFilterPipeline($pipeline, $files);
 
-                $gitChecker->initRepository($this->path);
+            return $this->generateOutput($filteredFiles);
 
-                // Get the commits from the changes parameter
-                $commits = explode(':', $this->changes);
-                $fromCommit = $commits[0];
-                $toCommit = $commits[1] ?? 'HEAD';
-
-                $changedFiles = $gitChecker->getChangedFilesBetweenCommits($fromCommit, $toCommit);
-                $repoRoot = $gitChecker->getRepositoryRoot();
-
-                // Filter files to only include those in the changed list
-                $filteredFiles = array_filter($filteredFiles, function ($file) use ($changedFiles, $repoRoot) {
-                    $relativePath = str_replace($repoRoot.'/', '', $file['file']->getRealPath());
-
-                    return in_array($relativePath, $changedFiles);
-                });
-
-                if ($this->io) {
-                    $this->io->writeln(
-                        'Filtered to '.count($filteredFiles).' changed files',
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                }
-
-            } catch (\Exception $e) {
-                if ($this->io) {
-                    $this->io->warning('Git change filtering failed: '.$e->getMessage());
-                    $this->io->writeln(
-                        'Continuing with unfiltered results...',
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                } else {
-                    throw $e; // Re-throw if we can't communicate the error
-                }
-            }
+        } catch (\Exception $e) {
+            $this->handleExecutionError($e);
+            throw $e;
         }
-        // If modified only flag is set, filter by Git status
-        elseif ($this->modifiedOnly && ! empty($filteredFiles)) {
-            try {
-                $gitChecker = new GitStatusChecker;
+    }
 
-                if (! $gitChecker->isGitRepository($this->path)) {
-                    throw new RuntimeException('Not a Git repository');
-                }
+    private function validateConfiguration(): void
+    {
+        $filterConfig = $this->config->getFilterConfig();
+        $filterConfig->validate();
 
-                $gitChecker->initRepository($this->path);
-                $modifiedFiles = $gitChecker->getModifiedFiles();
-                $repoRoot = $gitChecker->getRepositoryRoot();
-
-                // Filter files to only include those in the modified list
-                $filteredFiles = array_filter($filteredFiles, function ($file) use ($modifiedFiles, $repoRoot) {
-                    $relativePath = str_replace($repoRoot.'/', '', $file['file']->getRealPath());
-
-                    return in_array($relativePath, $modifiedFiles);
-                });
-
-                if ($this->io) {
-                    $this->io->writeln(
-                        'Filtered to '.count($filteredFiles).' modified files',
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                }
-
-            } catch (\Exception $e) {
-                if ($this->io) {
-                    $this->io->warning('Git filtering failed: '.$e->getMessage());
-                    $this->io->writeln(
-                        'Continuing with unfiltered results...',
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                } else {
-                    throw $e; // Re-throw if we can't communicate the error
-                }
-            }
+        if (! is_dir($this->config->getBasePath())) {
+            throw new RuntimeException('Invalid base path: '.$this->config->getBasePath());
         }
+    }
 
-        // Then apply AI filtering if requested
-        if ($this->aiFilterDescription !== null && ! empty($filteredFiles)) {
-            try {
-                $aiFilter = new OpenAIFileFilter;
+    private function createPipeline()
+    {
+        return $this->pipelineFactory->createPipeline(
+            $this->config->getBasePath(),
+            $this->config->toPipelineOptions(),
+            $this->config->getRuleset(),
+            $this->io
+        );
+    }
 
-                if ($this->io) {
-                    $this->io->writeln('Applying AI filter...', OutputInterface::VERBOSITY_VERBOSE);
-                }
+    private function getInitialFiles(): array
+    {
+        return iterator_to_array($this->config->getRuleset()->getFilteredFiles());
+    }
 
-                $filterResult = $aiFilter->filterFiles($filteredFiles, $this->aiFilterDescription);
-
-                // Update filtered files with AI results
-                $filteredFiles = $filterResult['files'];
-
-                // Show AI explanation if we have IO
-                if ($this->io) {
-                    $this->io->writeln(
-                        'AI Filter explanation: '.$filterResult['explanation'],
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                }
-            } catch (\Exception $e) {
-                if ($this->io) {
-                    $this->io->warning('AI filtering failed: '.$e->getMessage());
-                    $this->io->writeln(
-                        'Continuing with unfiltered results...',
-                        OutputInterface::VERBOSITY_VERBOSE
-                    );
-                } else {
-                    throw $e; // Re-throw if we can't communicate the error
-                }
-            }
+    private function executeFilterPipeline($pipeline, array $files): array
+    {
+        try {
+            return $pipeline->execute($files);
+        } catch (\Exception $e) {
+            throw new RuntimeException('Pipeline execution failed: '.$e->getMessage(), 0, $e);
         }
+    }
 
+    private function generateOutput(array $filteredFiles): array
+    {
         // Generate the tree view
         $treeOutput = FileTreeView::render($filteredFiles);
         $combinedOutput = $treeOutput;
 
-        // Add file contents if requested
         if (! $this->onlyTree) {
-            $fileContentsOutput = FileContentsView::render($filteredFiles, $this->maxLines);
+            $fileContentsOutput = FileContentsView::render(
+                $filteredFiles,
+                $this->config->getFilterConfig()->getMaxLines()
+            );
             $combinedOutput .= "\n\n---\n\n".$fileContentsOutput;
         }
 
-        // Return the final result
         return [
             'output' => $combinedOutput,
             'fileCount' => count($filteredFiles),
             'files' => $filteredFiles,
         ];
+    }
+
+    private function handleExecutionError(\Exception $e): void
+    {
+        if ($this->io) {
+            $this->io->error('Execution failed: '.$e->getMessage());
+            $this->io->writeln(
+                'Stack trace: '.$e->getTraceAsString(),
+                OutputInterface::VERBOSITY_DEBUG
+            );
+        }
+    }
+
+    private function logPipelineConfiguration($pipeline): void
+    {
+        if (! $this->io) {
+            return;
+        }
+
+        if ($pipeline->hasFilters()) {
+            $this->io->writeln(
+                'Configured filters:',
+                OutputInterface::VERBOSITY_VERBOSE
+            );
+            foreach ($pipeline->getFilterDescriptions() as $description) {
+                $this->io->writeln(
+                    "- {$description}",
+                    OutputInterface::VERBOSITY_VERBOSE
+                );
+            }
+        } else {
+            $this->io->writeln(
+                'No filters configured, using raw file list',
+                OutputInterface::VERBOSITY_VERBOSE
+            );
+        }
     }
 }

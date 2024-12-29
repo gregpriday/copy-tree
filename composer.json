@@ -17,6 +17,7 @@
     "require": {
         "php": "^8.2",
         "ext-fileinfo": "*",
+        "caseyamcl/guzzle_retry_middleware": "^2.12",
         "civicrm/gitignore": "^1.2",
         "czproject/git-php": "^4.3",
         "illuminate/support": "^11.15",

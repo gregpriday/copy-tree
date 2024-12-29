@@ -2,7 +2,7 @@
 
 namespace GregPriday\CopyTree\Tests\Unit;
 
-use GregPriday\CopyTree\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
 use Symfony\Component\Console\Style\SymfonyStyle;

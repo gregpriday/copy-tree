@@ -2,6 +2,7 @@
 
 namespace GregPriday\CopyTree\Ruleset;
 
+use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
 use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
