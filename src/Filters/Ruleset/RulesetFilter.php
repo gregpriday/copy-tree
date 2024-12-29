@@ -1,12 +1,15 @@
 <?php
 
-namespace GregPriday\CopyTree\Ruleset;
+namespace GregPriday\CopyTree\Filters\Ruleset;
 
 use Generator;
+use GregPriday\CopyTree\Filters\FileFilterInterface;
+use GregPriday\CopyTree\Ruleset\FilteredDirIterator;
 use GregPriday\CopyTree\Ruleset\Rules\FileAttributeExtractor;
 use GregPriday\CopyTree\Ruleset\Rules\Rule;
 use GregPriday\CopyTree\Ruleset\Rules\RuleEvaluator;
 use InvalidArgumentException;
+use RuntimeException;
 use SplFileInfo;
 
 /**
@@ -14,7 +17,7 @@ use SplFileInfo;
  *
  * Supports complex rule combinations, including global exclusions, conditional inclusions, and always-include files.
  */
-class RulesetFilter
+class RulesetFilter implements FileFilterInterface
 {
     private string $basePath;
 
@@ -30,11 +33,23 @@ class RulesetFilter
 
     private array $alwaysExcludeFiles = [];
 
+    private ?string $description = null;
+
     public function __construct(string $basePath)
     {
         $this->basePath = rtrim(realpath($basePath), '/');
         $this->ruleEvaluator = new RuleEvaluator($this->basePath);
         $this->attributeExtractor = new FileAttributeExtractor($this->basePath);
+    }
+
+    /**
+     * Set a custom description for this ruleset filter.
+     */
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
     }
 
     public static function fromJson(string $jsonString, string $basePath): self
@@ -125,12 +140,34 @@ class RulesetFilter
     }
 
     /**
+     * Implementation of FileFilterInterface::filter()
+     *
+     * If files array is empty, scans the base path. Otherwise, filters the provided files.
+     */
+    public function filter(array $files, array $context = []): array
+    {
+        // If no files provided, scan the base path
+        if (empty($files)) {
+            return iterator_to_array($this->getFilteredFiles());
+        }
+
+        // Otherwise, filter the provided files
+        return array_filter($files, function ($file) {
+            return $this->shouldIncludeFile($file['file'], $file['path']);
+        });
+    }
+
+    /**
      * Get filtered files using a generator approach.
      *
      * @return Generator<array{path: string, file: SplFileInfo}>
      */
     public function getFilteredFiles(): Generator
     {
+        if (! is_dir($this->basePath)) {
+            throw new RuntimeException("Base path does not exist: {$this->basePath}");
+        }
+
         $iterator = new \RecursiveIteratorIterator(
             new FilteredDirIterator(
                 $this->basePath,
@@ -150,6 +187,50 @@ class RulesetFilter
                 }
             }
         }
+    }
+
+    /**
+     * Implementation of FileFilterInterface::getDescription()
+     */
+    public function getDescription(): string
+    {
+        if ($this->description !== null) {
+            return $this->description;
+        }
+
+        $parts = [];
+
+        if (! empty($this->includeRuleSets)) {
+            $parts[] = sprintf('%d include rule sets', count($this->includeRuleSets));
+        }
+
+        if (! empty($this->globalExcludeRules)) {
+            $parts[] = sprintf('%d global exclude rules', count($this->globalExcludeRules));
+        }
+
+        if (! empty($this->alwaysIncludeFiles)) {
+            $parts[] = sprintf('%d always-include files', count($this->alwaysIncludeFiles));
+        }
+
+        if (! empty($this->alwaysExcludeFiles)) {
+            $parts[] = sprintf('%d always-exclude files', count($this->alwaysExcludeFiles));
+        }
+
+        return empty($parts)
+            ? 'No rules configured'
+            : 'Ruleset filter with '.implode(', ', $parts);
+    }
+
+    /**
+     * Implementation of FileFilterInterface::shouldApply()
+     */
+    public function shouldApply(array $context = []): bool
+    {
+        // RulesetFilter should always apply if it has any rules configured
+        return ! empty($this->includeRuleSets)
+            || ! empty($this->globalExcludeRules)
+            || ! empty($this->alwaysIncludeFiles)
+            || ! empty($this->alwaysExcludeFiles);
     }
 
     private function isAlwaysIncluded(string $relativePath): bool
