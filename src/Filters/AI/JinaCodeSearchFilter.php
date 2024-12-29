@@ -34,7 +34,7 @@ class JinaCodeSearchFilter implements FileFilterInterface
      */
     public function __construct(
         private readonly string $query,
-        float $relevancyThreshold = 0.5,
+        float $relevancyThreshold = 0.35,
         int $previewLength = 8192,
         int $chunkSize = 20
     ) {
