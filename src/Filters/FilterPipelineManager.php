@@ -3,6 +3,7 @@
 namespace GregPriday\CopyTree\Filters;
 
 use RuntimeException;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -62,7 +63,7 @@ class FilterPipelineManager
         $activeFilters = $this->getActiveFilters();
 
         if (empty($activeFilters)) {
-            $this->log('No active filters in pipeline', 'comment');
+            $this->log('No active filters in pipeline', 'comment', OutputInterface::VERBOSITY_VERBOSE);
 
             return $files;
         }
@@ -83,7 +84,7 @@ class FilterPipelineManager
 
             // Stop processing if no files remain
             if (empty($filteredFiles)) {
-                $this->log('No files remaining after filter, stopping pipeline', 'comment');
+                $this->log('No files remaining after filter, stopping pipeline', 'comment', OutputInterface::VERBOSITY_VERBOSE);
                 break;
             }
         }
@@ -132,10 +133,16 @@ class FilterPipelineManager
      *
      * @param  string  $message  The message to log
      * @param  string  $type  The type of message (info, comment, warning, error)
+     * @param  int  $verbosity  The minimum verbosity level required to show this message
      */
-    private function log(string $message, string $type = 'info'): void
+    private function log(string $message, string $type = 'info', int $verbosity = OutputInterface::VERBOSITY_NORMAL): void
     {
         if (! $this->io) {
+            return;
+        }
+
+        // Only proceed if the current verbosity level is sufficient
+        if ($verbosity > OutputInterface::VERBOSITY_NORMAL && ! $this->io->isVerbose()) {
             return;
         }
 
@@ -155,7 +162,8 @@ class FilterPipelineManager
     {
         $this->log(
             "Applying filter: {$filter->getDescription()}",
-            'info'
+            'info',
+            OutputInterface::VERBOSITY_VERBOSE
         );
     }
 
@@ -171,7 +179,8 @@ class FilterPipelineManager
         if ($difference > 0) {
             $this->log(
                 "Filter removed {$difference} files, {$finalCount} remaining",
-                'comment'
+                'comment',
+                OutputInterface::VERBOSITY_VERBOSE
             );
         }
     }
@@ -187,7 +196,7 @@ class FilterPipelineManager
 
         if ($this->io) {
             $this->log($message, 'error');
-            $this->log('Continuing with unfiltered results...', 'comment');
+            $this->log('Continuing with unfiltered results...', 'comment', OutputInterface::VERBOSITY_VERBOSE);
         } else {
             throw new RuntimeException($message);
         }
