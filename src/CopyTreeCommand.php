@@ -57,7 +57,8 @@ class CopyTreeCommand extends Command
 
             // GitHub-related options
             ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Do not use or keep cached GitHub repositories.')
-            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.');
+            ->addOption('clear-cache', null, InputOption::VALUE_NONE, 'Clear the GitHub repository cache and exit.')
+            ->addOption('ruleset-docs', null, InputOption::VALUE_NONE, 'Copy the ruleset documentation from the docs/rulesets directory.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -139,6 +140,16 @@ class CopyTreeCommand extends Command
 
     private function resolvePath(InputInterface $input, SymfonyStyle $io): string
     {
+        // If ruleset-docs option is set, use the docs/rulesets directory from PROJECT_ROOT
+        if ($input->getOption('ruleset-docs')) {
+            $path = PROJECT_ROOT.'/docs/rulesets';
+            if (! is_dir($path)) {
+                throw new RuntimeException('Ruleset documentation directory not found');
+            }
+
+            return $path;
+        }
+
         $path = $input->getArgument('path') ?? getcwd();
 
         if (GitHubUrlHandler::isGitHubUrl($path)) {

@@ -6,7 +6,7 @@
 
 > **Note**: This tool is designed exclusively for MacOS and is not compatible with other operating systems.
 
-Ctree is a command-line tool designed to easily copy the structure and contents of a directory or GitHub repository to your clipboard, specifically formatted for interaction with AI assistants like [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/). It provides a quick way to get your code and content into these platforms for analysis, code generation, or any other tasks they can perform.
+Ctree is a command-line tool designed to easily copy the structure and contents of a directory or GitHub repository to your clipboard, specifically formatted for interaction with AI assistants like [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/). It provides a quick way to get your code and content into these platforms for analysis, code generation, or any other tasks they can perform. See the [workflow documentation](docs/workflow.md) for more information on how to fully utilize Ctree with AI assistants.
 
 ## Features
 
