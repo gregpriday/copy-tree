@@ -102,6 +102,14 @@ Ctree is designed to enhance your development workflow when working with AI assi
     -   Create modular rulesets for different project areas
     -   Leverage advanced ruleset features
 
+-   **[AI-Powered Business Plan Development](docs/workflows/business-plans.md)**: A step-by-step guide to creating a comprehensive business plan and operational system using `ctree` and [Google Gemini](https://gemini.google.com/)'s advanced features. Learn how to:
+    -   Conduct in-depth market research with Gemini Deep Research
+    -   Iteratively refine your business plan with AI assistance
+    -   Use `ctree` to provide full project context to Gemini
+    -   Generate detailed financial projections and strategic documents
+    -   Create and document operational processes using Mermaid diagrams
+    -   Continuously improve your plan with data-driven insights
+
 These workflows are designed to help you maximize the effectiveness of AI assistance in your development process, using Ctree to manage code context and facilitate communication with AI assistants.
 
 ## Advanced Usage
