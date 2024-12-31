@@ -6,7 +6,7 @@
 
 > **Note**: This tool is designed exclusively for MacOS and is not compatible with other operating systems.
 
-Ctree is a command-line tool designed to easily copy the structure and contents of a directory or GitHub repository to your clipboard, specifically formatted for interaction with AI assistants like [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/). It provides a quick way to get your code and content into these platforms for analysis, code generation, or any other tasks they can perform. See the [workflow documentation](docs/workflow.md) for more information on how to fully utilize Ctree with AI assistants.
+Ctree is a command-line tool designed to easily copy the structure and contents of a directory or GitHub repository to your clipboard, specifically formatted for interaction with AI assistants like [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/). It provides a quick way to get your code and content into these platforms for analysis, code generation, or any other tasks they can perform.
 
 ## Features
 
@@ -78,6 +78,30 @@ ctree https://github.com/username/repo/tree/main/src
 ```bash
 ctree --ai-filter="Find all authentication related files"
 ```
+
+## Workflows
+
+Ctree is designed to enhance your development workflow when working with AI assistants. We provide detailed workflow documentation for different use cases:
+
+-   **[AI-Driven Design Workflow](docs/workflows/design.md)**: A systematic approach to designing web applications using SvelteKit, Tailwind CSS, and Claude. Learn how to:
+    -   Iterate on designs with AI assistance
+    -   Use component-focused refinement
+    -   Manage design systems with Tailwind
+    -   Integrate backend functionality
+
+-   **[AI-Assisted Development Workflow](docs/workflows/development.md)**: A comprehensive guide to developing code features with AI assistance. Covers:
+    -   Test-driven development with AI
+    -   Using AI for code generation and refinement
+    -   Managing large codebases with rulesets
+    -   Efficient context management for AI interactions
+
+-   **[AI-Assisted Ruleset Creation Workflow](docs/workflows/rulesets.md)**: A guide to creating and refining `ctree` rulesets with the help of AI. Learn how to:
+    -   Provide comprehensive project context to AI assistants
+    -   Iteratively develop and test rulesets
+    -   Create modular rulesets for different project areas
+    -   Leverage advanced ruleset features
+
+These workflows are designed to help you maximize the effectiveness of AI assistance in your development process, using Ctree to manage code context and facilitate communication with AI assistants.
 
 ## Advanced Usage
 
