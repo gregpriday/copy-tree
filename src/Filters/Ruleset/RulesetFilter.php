@@ -284,12 +284,14 @@ class RulesetFilter implements FileFilterInterface
     private function matchesAllRules(SplFileInfo $file, array $rules): bool
     {
         foreach ($rules as $rule) {
-            if (isset($rule['type']) && $rule['type'] === 'OR') {
+            if (is_array($rule) && isset($rule['type']) && $rule['type'] === 'OR') {
                 if (! $this->matchesAnyRule($file, $rule['rules'])) {
                     return false;
                 }
-            } elseif (! $this->ruleEvaluator->evaluateRule($rule, $file)) {
-                return false;
+            } elseif ($rule instanceof Rule) {
+                if (! $this->ruleEvaluator->evaluateRule($rule, $file)) {
+                    return false;
+                }
             }
         }
 
