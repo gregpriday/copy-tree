@@ -33,7 +33,7 @@ This document outlines a process for developing software features using AI assis
           ```bash
           ctree
           ```
-        * If **NO**:
+        * If **NO**: (Create a ruleset)[./rulesets.md] for this part of the codebase:
           ```bash
           # Get structure and file previews
           ctree --max-lines=20
@@ -230,7 +230,7 @@ Let's walk through implementing semantic search filtering:
 
 * **Context Management:**
     * Provide complete, relevant code context
-    * Use rulesets for large codebases
+    * Use (rulesets)[./rulesets.md] for large codebases
     * Include documentation and examples
 
 * **Iterative Development:**
