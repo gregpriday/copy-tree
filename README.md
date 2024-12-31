@@ -25,6 +25,7 @@ Ctree is a command-line tool designed to easily copy the structure and contents 
     -   Display the output in the console.
     -   Stream output for piping to other commands.
 -   **Reference File Copying:** Copy a reference to a temporary file instead of the content itself, to work around clipboard limitations.
+-   **GitHub Integration**: Copy directly from GitHub repositories using URLs. Includes smart caching for improved performance. See [GitHub URLs Guide](docs/github-urls.md) for details.
 
 ## Prerequisites
 
