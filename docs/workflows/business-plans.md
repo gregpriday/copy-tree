@@ -45,7 +45,7 @@ This workflow outlines how to leverage `ctree`, Google Gemini's Deep Research, a
     *   Clearly outline your business idea and the key areas you need to research (e.g., market size, target audience, competitors, pricing models, technology trends).
 
 2. **Formulate Advanced Research Queries:**
-    *   Craft specific, detailed prompts for Gemini's Deep Research feature. Access this at [https://gemini.google.com/](https://gemini.google.com/) and utilize the `/research` command.
+    *   Craft specific, detailed prompts for Gemini's Deep Research feature. Access this at [https://gemini.google.com/](https://gemini.google.com/) and use the Deep Research model.
     *   **Example Prompts:**
         >   "Using Deep Research, provide an in-depth analysis of the market for [your industry/niche], including market size, growth rate, key trends, and major players. Focus on the segment related to [your specific product/service] and identify any emerging opportunities or threats."
         >
@@ -58,10 +58,10 @@ This workflow outlines how to leverage `ctree`, Google Gemini's Deep Research, a
         >   "Using Deep Research, what are the key security and compliance considerations for businesses operating in [your industry/niche]? Analyze the relevant regulations (e.g., GDPR, HIPAA, CCPA) and identify best practices for ensuring data privacy and security."
 
 3. **Execute Deep Research:**
-    *   Submit your queries to Gemini Deep Research using the `/research` command in the Gemini web interface.
+    *   Submit your queries to Gemini Deep Research using the Deep Research feature in the Gemini web interface.
 
 4. **Organize Research Findings:**
-    *   **Create Google Docs:** For each research topic, create a dedicated Google Doc to store the raw output from Gemini Deep Research.
+    *   **Create Google Docs:** For each research topic, open the research result as a Google Doc from the Gemini interface.
     *   **Export to Markdown:** Export each Google Doc as a Markdown file.
     *   **Save in `research` directory:** Place the Markdown files within the `research` folder of your project directory (e.g., `research/market-analysis.md`, `research/competitor-analysis.md`, `research/technology-trends.md`).
 
