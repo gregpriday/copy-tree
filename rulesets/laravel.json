@@ -3,6 +3,10 @@
         [
             ["folder", "startsWithAny", ["app", "database/migrations", "database/factories", "routes", "tests"]],
             ["extension", "oneOf", ["php", "blade.php"]]
+        ],
+        [
+            ["folder", "startsWith", "resources/sql"],
+            ["extension", "=", "sql"]
         ]
     ],
     "globalExcludeRules": [
