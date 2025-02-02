@@ -19,7 +19,7 @@ class CopyTreeExecutor
         private readonly bool $onlyTree = false,
         private readonly ?SymfonyStyle $io = null
     ) {
-        $this->pipelineFactory = new FilterPipelineFactory();
+        $this->pipelineFactory = new FilterPipelineFactory;
     }
 
     /**
@@ -37,6 +37,7 @@ class CopyTreeExecutor
             $this->logPipelineConfiguration($pipeline);
             $files = $this->getInitialFiles();
             $filteredFiles = $this->executeFilterPipeline($pipeline, $files);
+
             return $this->generateOutput($filteredFiles);
         } catch (\Exception $e) {
             $this->handleExecutionError($e);
@@ -52,8 +53,8 @@ class CopyTreeExecutor
         $filterConfig = $this->config->getFilterConfig();
         $filterConfig->validate();
 
-        if (!is_dir($this->config->getBasePath())) {
-            throw new RuntimeException('Invalid base path: ' . $this->config->getBasePath());
+        if (! is_dir($this->config->getBasePath())) {
+            throw new RuntimeException('Invalid base path: '.$this->config->getBasePath());
         }
     }
 
@@ -85,8 +86,8 @@ class CopyTreeExecutor
     /**
      * Execute the filter pipeline on the provided files.
      *
-     * @param mixed $pipeline The filter pipeline.
-     * @param array $files The array of files to filter.
+     * @param  mixed  $pipeline  The filter pipeline.
+     * @param  array  $files  The array of files to filter.
      * @return array The filtered files.
      *
      * @throws RuntimeException If the pipeline execution fails.
@@ -96,7 +97,7 @@ class CopyTreeExecutor
         try {
             return $pipeline->execute($files);
         } catch (\Exception $e) {
-            throw new RuntimeException('Pipeline execution failed: ' . $e->getMessage(), 0, $e);
+            throw new RuntimeException('Pipeline execution failed: '.$e->getMessage(), 0, $e);
         }
     }
 
@@ -106,7 +107,7 @@ class CopyTreeExecutor
      * Wraps the tree view in <ct:tree> tags and, if not in tree-only mode,
      * wraps the file contents in <ct:project_files> tags—all enclosed in a root <ct:project> element.
      *
-     * @param array $filteredFiles The filtered files array.
+     * @param  array  $filteredFiles  The filtered files array.
      * @return array{output: string, fileCount: int, files: array} The operation result.
      */
     private function generateOutput(array $filteredFiles): array
@@ -115,16 +116,16 @@ class CopyTreeExecutor
         $treeOutput = FileTreeView::render($filteredFiles);
 
         // Start with a namespaced root element and declare the namespace.
-        $combinedOutput  = '<ct:project>' . "\n";
-        $combinedOutput .= "<ct:tree>\n" . $treeOutput . "\n</ct:tree>\n";
+        $combinedOutput = '<ct:project>'."\n";
+        $combinedOutput .= "<ct:tree>\n".$treeOutput."\n</ct:tree>\n";
 
-        if (!$this->onlyTree) {
+        if (! $this->onlyTree) {
             // Only generate file contents if required
             $fileContentsOutput = FileContentsView::render(
                 $filteredFiles,
                 $this->config->getFilterConfig()->getMaxLines()
             );
-            $combinedOutput .= "<ct:project_files>\n" . $fileContentsOutput . "\n</ct:project_files>\n";
+            $combinedOutput .= "<ct:project_files>\n".$fileContentsOutput."\n</ct:project_files>\n";
         }
 
         $combinedOutput .= "</ct:project><!-- END OF PROJECT -->\n\n";
@@ -139,14 +140,14 @@ class CopyTreeExecutor
     /**
      * Handle execution errors by logging if an IO interface is available.
      *
-     * @param \Exception $e The exception to handle.
+     * @param  \Exception  $e  The exception to handle.
      */
     private function handleExecutionError(\Exception $e): void
     {
         if ($this->io) {
-            $this->io->error('Execution failed: ' . $e->getMessage());
+            $this->io->error('Execution failed: '.$e->getMessage());
             $this->io->writeln(
-                'Stack trace: ' . $e->getTraceAsString(),
+                'Stack trace: '.$e->getTraceAsString(),
                 OutputInterface::VERBOSITY_DEBUG
             );
         }
@@ -155,11 +156,11 @@ class CopyTreeExecutor
     /**
      * Log the configuration of the pipeline filters.
      *
-     * @param mixed $pipeline The filter pipeline.
+     * @param  mixed  $pipeline  The filter pipeline.
      */
     private function logPipelineConfiguration($pipeline): void
     {
-        if (!$this->io) {
+        if (! $this->io) {
             return;
         }
 
