@@ -29,7 +29,7 @@ class FileContentsView
 
             // Build tag with metadata
             $output[] = sprintf(
-                '<file_contents path="%s" mime-type="%s" size="%s" lines="%d" modified="%s">',
+                '<ct:file_contents path="%s" mime-type="%s" size="%s" lines="%d" modified="%s">',
                 $relativePath,
                 $mimeType,
                 $size,
@@ -54,7 +54,7 @@ class FileContentsView
                 $output[] = $e->getMessage();
             }
 
-            $output[] = '</file_contents> '.sprintf('<!-- End of file: %s -->', $relativePath);
+            $output[] = '</ct:file_contents> '.sprintf('<!-- End of file: %s -->', $relativePath);
             $output[] = '';
         }
 
