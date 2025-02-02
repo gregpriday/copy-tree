@@ -128,7 +128,7 @@ class CopyTreeExecutor
             $combinedOutput .= "<ct:project_files>\n".$fileContentsOutput."\n</ct:project_files>\n";
         }
 
-        $combinedOutput .= "</ct:project><!-- END OF PROJECT -->\n\n";
+        $combinedOutput .= "</ct:project><!-- END OF PROJECT -->\n\n\n";
 
         return [
             'output' => $combinedOutput,
