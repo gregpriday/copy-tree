@@ -2,30 +2,51 @@
 
 Rulesets are the heart of Ctree's powerful file filtering capabilities. They allow you to precisely control which files and directories are included or excluded when copying a directory tree.
 
+## Quick Start
+
+Here's the fastest way to get started with Ctree rulesets:
+
+```json
+{
+    "rules": [
+        [
+            ["extension", "oneOf", ["js", "ts"]]
+        ]
+    ]
+}
+```
+
+Save this as `.ctree/ruleset.json` in your project to include all JavaScript and TypeScript files. That's it!
+
+Common use cases:
+- Include specific file types: `["extension", "oneOf", ["php", "js"]]`
+- Filter by folder: `["folder", "startsWith", "src"]`
+- Exclude patterns: `["basename", "startsWith", "."]`
+
 Related documentation:
 - [Ruleset Examples](./examples.md)
 - [Fields and Operations Reference](./fields-and-operations.md)
 - [Using Multiple Rulesets](./multiple-rulesets.md)
 
-Here are some [ruleset examples](./examples.md) to help you understand the overall system.
+## Basic Structure
 
-Rulesets are defined in JSON format. Here's the basic structure:
+Rulesets are defined in JSON format. Here's the complete structure:
 
 ```json
 {
-  "rules": [
-    [
-      ["field", "operator", "value"],
-      ["field", "operator", "value"]
-    ]
-  ],
-  "globalExcludeRules": [
-    ["field", "operator", "value"]
-  ],
-  "always": {
-    "include": ["file1", "file2"],
-    "exclude": ["file3", "file4"]
-  }
+    "rules": [
+        [
+            ["field", "operator", "value"],
+            ["field", "operator", "value"]
+        ]
+    ],
+    "globalExcludeRules": [
+        ["field", "operator", "value"]
+    ],
+    "always": {
+        "include": ["file1", "file2"],
+        "exclude": ["file3", "file4"]
+    }
 }
 ```
 
@@ -40,93 +61,102 @@ Each rule is an array with three elements:
 
 Check [Fields and Operations](./fields-and-operations.md) for more details on what's available here.
 
-Example:
+### Rule Combinations
+
+Rules can be combined using AND/OR logic:
+
 ```json
-"rules": [
-  [
-    ["folder", "startsWith", "src"],
-    ["extension", "oneOf", ["js", "ts"]]
-  ],
-  [
-    ["folder", "startsWith", "tests"],
-    ["basename", "endsWith", "Test"]
-  ]
-]
+{
+    "rules": [
+        [
+            ["folder", "startsWith", "src"],     // Rule 1   \
+            ["extension", "oneOf", ["js", "ts"]] // Rule 2   } AND
+        ],                                       //          /
+        [                                       // New ruleset - OR
+            ["folder", "startsWith", "tests"],   // Rule 3   \
+            ["basename", "endsWith", "Test"]     // Rule 4   } AND
+        ]
+    ]
+}
 ```
 
 This ruleset includes files that are either:
 - In a folder starting with "src" AND have a "js" or "ts" extension, OR
 - In a folder starting with "tests" AND have a basename ending with "Test"
 
-### Understanding the `rules` Field
+### How Rules Are Evaluated
 
-The `rules` field in a Ctree ruleset is an array of rule sets. Each rule set is an array of individual rules. For a file to be included in the output, it must satisfy all the rules in at least one of the rule sets.
-
-Here's the general structure:
-
-```json
-{
-    "rules": [
-        [
-            ["field1", "operator1", "value1"],
-            ["field2", "operator2", "value2"]
-        ],
-        [
-            ["field3", "operator3", "value3"],
-            ["field4", "operator4", "value4"]
-        ]
-    ]
-}
-```
-
-In this example, the `rules` array contains two rule sets:
-
-1. The first rule set:
+1. Rules within a ruleset use AND logic:
    ```json
    [
-     ["field1", "operator1", "value1"],
-     ["field2", "operator2", "value2"]
+     ["field1", "=", "value1"],     // Must match this AND
+     ["field2", "=", "value2"]      // Must match this
    ]
    ```
 
-2. The second rule set:
+2. Different rulesets use OR logic:
    ```json
-   [
-     ["field3", "operator3", "value3"], 
-     ["field4", "operator4", "value4"]
-   ]
+   {
+     "rules": [
+       [["extension", "=", "js"]],     // Match this ruleset OR
+       [["extension", "=", "ts"]]      // Match this ruleset
+     ]
+   }
    ```
 
-For a file to be included, it must satisfy either:
-- All the rules in the first rule set (field1 operator1 value1 AND field2 operator2 value2)
-- OR all the rules in the second rule set (field3 operator3 value3 AND field4 operator4 value4)
+3. Global exclude rules are always applied first:
+   ```json
+   {
+     "globalExcludeRules": [
+       ["folder", "contains", "node_modules"]  // Exclude these first
+     ],
+     "rules": [
+       [["extension", "=", "js"]]             // Then apply these
+     ]
+   }
+   ```
 
-In other words:
-- The rules within each rule set are combined with a logical AND
-- The rule sets themselves are combined with a logical OR
+## Best Practices
 
-This allows for powerful and flexible filtering. You can define multiple criteria that a file must meet (within a rule set), while also providing alternate paths for inclusion (via multiple rule sets).
+### Organization
+- Group related rules together in a ruleset
+- Use descriptive comments to explain complex rules
+- Keep rulesets focused on specific purposes
+- Consider splitting complex rulesets into multiple files
 
-For example:
-```json
-{
-    "rules": [
-        [
-            ["folder", "startsWith", "src"],
-            ["extension", "oneOf", ["js", "ts"]]
-        ],
-        [
-            ["basename", "equals", "README.md"]
-        ]
-    ]
-}
-```
+### Performance
+- Use path-based rules (folder, extension) before content-based rules
+- Avoid complex regex patterns when simple string operations will do
+- Put most common exclusions in globalExcludeRules
+- List most likely matches first in OR conditions
 
-In this ruleset, a file will be included if it is either:
-- Inside a folder that starts with "src" AND has a ".js" or ".ts" extension
-- OR has the exact basename "README.md"
+### Maintainability
+- Version control your rulesets alongside your code
+- Document complex rule combinations
+- Use consistent formatting and naming
+- Break down complex rulesets into smaller, focused ones
 
-This combination of AND within rule sets and OR between rule sets enables you to create rulesets that precisely target the files you want to include, while keeping the logic clear and maintainable.
+## Troubleshooting
+
+Common issues and solutions:
+
+1. Files not being included:
+    - Check path separators (use forward slashes)
+    - Verify case sensitivity
+    - Look for conflicting globalExcludeRules
+    - Test rules individually
+
+2. Performance issues:
+    - Minimize use of content-based rules
+    - Use specific path-based rules first
+    - Avoid complex regex patterns
+    - Keep rulesets focused and minimal
+
+3. Cross-platform issues:
+    - Always use forward slashes (/) in paths
+    - Be explicit about case sensitivity
+    - Test on all target platforms
+    - Use relative paths
 
 ## Global Exclude Rules
 

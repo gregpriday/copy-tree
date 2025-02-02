@@ -3,6 +3,10 @@
         [
             ["folder", "startsWithAny", ["src", "static", "tests"]],
             ["extension", "oneOf", ["js", "ts", "svelte"]]
+        ],
+        [
+            ["folder", "startsWith", "docs"],
+            ["extension", "=", "md"]
         ]
     ],
     "globalExcludeRules": [

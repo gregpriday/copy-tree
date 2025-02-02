@@ -67,26 +67,6 @@
                     "items": { "type": "string" }
                 }
             }
-        },
-        "workspaces": {
-            "type": "object",
-            "patternProperties": {
-                "^[a-zA-Z0-9-_]+$": {
-                    "type": "object",
-                    "properties": {
-                        "rules": { "$ref": "#/properties/rules" },
-                        "globalExcludeRules": { "$ref": "#/properties/globalExcludeRules" },
-                        "always": { "$ref": "#/properties/always" },
-                        "extends": {
-                            "type": "string",
-                            "description": "Name of another ruleset to extend"
-                        },
-                        "description": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
         }
     }
 }

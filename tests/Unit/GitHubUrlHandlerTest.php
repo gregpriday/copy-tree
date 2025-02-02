@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Tests\Integration;
+namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\CopyTreeCommand;
 use PHPUnit\Framework\TestCase;
@@ -50,7 +50,7 @@ class GitHubUrlHandlerTest extends TestCase
         }
     }
 
-    public function testGitHubUrlHandlerBasicFunctionality(): void
+    public function test_git_hub_url_handler_basic_functionality(): void
     {
         // Execute the command with a GitHub URL and stream output
         $this->commandTester->execute([
@@ -73,7 +73,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertDirectoryExists($this->cacheDir);
     }
 
-    public function testGitHubUrlHandlerSubdirectory(): void
+    public function test_git_hub_url_handler_subdirectory(): void
     {
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/develop/docs',
@@ -96,7 +96,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertEquals(0, $this->commandTester->getStatusCode());
     }
 
-    public function testGitHubUrlHandlerWithSpecificBranch(): void
+    public function test_git_hub_url_handler_with_specific_branch(): void
     {
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/rulesets',
@@ -114,7 +114,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertEquals(0, $this->commandTester->getStatusCode());
     }
 
-    public function testGitHubUrlHandlerCacheClearing(): void
+    public function test_git_hub_url_handler_cache_clearing(): void
     {
         // First, execute a normal command to populate the cache
         $this->commandTester->execute([
@@ -136,7 +136,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertStringContainsString('GitHub repository cache cleared successfully', $this->commandTester->getDisplay());
     }
 
-    public function testGitHubUrlHandlerInvalidUrl(): void
+    public function test_git_hub_url_handler_invalid_url(): void
     {
         $this->commandTester->execute([
             'path' => 'https://github.com/invalid/repo/that/does/not/exist',
@@ -148,7 +148,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertStringContainsString('Failed to clone repository', $this->commandTester->getDisplay());
     }
 
-    public function testGitHubUrlHandlerInvalidPath(): void
+    public function test_git_hub_url_handler_invalid_path(): void
     {
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/nonexistent-directory',
@@ -160,7 +160,7 @@ class GitHubUrlHandlerTest extends TestCase
         $this->assertStringContainsString('not found in repository', $this->commandTester->getDisplay());
     }
 
-    public function testGitHubUrlHandlerCacheReuse(): void
+    public function test_git_hub_url_handler_cache_reuse(): void
     {
         // First execution should clone the repository
         $this->commandTester->execute([

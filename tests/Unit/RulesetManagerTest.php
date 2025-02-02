@@ -1,11 +1,10 @@
 <?php
 
-namespace GregPriday\CopyTree\Tests\Ruleset;
+namespace GregPriday\CopyTree\Tests\Unit;
 
-use GregPriday\CopyTree\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
 use GregPriday\CopyTree\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
-use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class RulesetManagerTest extends TestCase
@@ -31,7 +30,7 @@ class RulesetManagerTest extends TestCase
         $this->removeDirectory($this->testDir);
     }
 
-    public function testGetRulesetWithWorkspace(): void
+    public function test_get_ruleset_with_workspace(): void
     {
         $workspaceConfig = [
             'workspaces' => [
@@ -52,31 +51,25 @@ class RulesetManagerTest extends TestCase
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function testGetRulesetWithNonExistentWorkspace(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->manager->getRuleset('auto', 'nonexistent');
-    }
-
-    public function testCreateEmptyRuleset(): void
+    public function test_create_empty_ruleset(): void
     {
         $ruleset = $this->manager->createEmptyRuleset();
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function testCreateRulesetFromGlob(): void
+    public function test_create_ruleset_from_glob(): void
     {
         $ruleset = $this->manager->createRulesetFromGlob('*.php');
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function testCreateRulesetFromGlobs(): void
+    public function test_create_ruleset_from_globs(): void
     {
         $ruleset = $this->manager->createRulesetFromGlobs(['*.php', '*.js']);
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function testGetRulesetWithCustomRuleset(): void
+    public function test_get_ruleset_with_custom_ruleset(): void
     {
         $customRuleset = [
             'rules' => [
@@ -93,17 +86,11 @@ class RulesetManagerTest extends TestCase
         $this->assertInstanceOf(RulesetFilter::class, $ruleset);
     }
 
-    public function testGetAvailableRulesets(): void
+    public function test_get_available_rulesets(): void
     {
         $rulesets = $this->manager->getAvailableRulesets();
         $this->assertIsArray($rulesets);
         $this->assertContains('auto', $rulesets);
-    }
-
-    public function testGetAvailableWorkspaces(): void
-    {
-        $workspaces = $this->manager->getAvailableWorkspaces();
-        $this->assertIsArray($workspaces);
     }
 
     private function removeDirectory(string $dir): void
