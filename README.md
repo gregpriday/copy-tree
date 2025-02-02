@@ -1,125 +1,116 @@
-# Copy a directory and its files to your clipboard with Ctree
+# Copy a Directory and Its Files to Your Clipboard with Ctree
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/gregpriday/copy-tree.svg?style=flat-square)](https://packagist.org/packages/gregpriday/copy-tree)
 [![Tests](https://img.shields.io/github/actions/workflow/status/gregpriday/copy-tree/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/gregpriday/copy-tree/actions/workflows/run-tests.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/gregpriday/copy-tree.svg?style=flat-square)](https://packagist.org/packages/gregpriday/copy-tree)
 
-> **Note**: This tool is designed exclusively for MacOS and is not compatible with other operating systems.
+> **Note:** This tool is designed exclusively for MacOS and is not compatible with other operating systems.
 
-Ctree is a command-line tool designed to easily copy the structure and contents of a directory or GitHub repository to your clipboard, specifically formatted for interaction with AI assistants like [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/). It provides a quick way to get your code and content into these platforms for analysis, code generation, or any other tasks they can perform.
+Ctree is a command-line utility that effortlessly copies the structure and contents of a local directory or GitHub repository to your clipboard. It formats the output specifically for use with AI assistants such as [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and [Gemini](https://gemini.google.com/), making it ideal for code analysis, generation, and sharing.
 
 ## Features
 
--   **MacOS Integration**: Seamless clipboard integration using native MacOS tools (`pbcopy` and `osascript`).
--   **GitHub Integration**: Copy directly from GitHub repositories using URLs. Includes smart caching for improved performance.
--   **[AI-Powered Features](docs/ai-features.md)**:
-    -   **Intelligent File Filtering**: Use natural language to describe which files to include.
-    -   **Smart Filename Generation**: Automatically generates descriptive filenames when saving output based on content analysis.
--   **Smart Directory Management**:
-    -   **Flexible Ruleset System**: Define rules for including/excluding files using a powerful JSON-based system.
-    -   **Multiple Rulesets**: Create different rulesets (e.g., `frontend.json`, `backend.json`) to target specific parts of your project.
-    -   **Project Auto-detection**: Automatically detects and uses appropriate rulesets for common project types (Laravel, SvelteKit, etc.).
--   **Versatile Output Options**:
-    -   Copy directly to clipboard.
-    -   Save to a file (with AI-generated names if desired).
-    -   Display the output in the console.
-    -   Stream output for piping to other commands.
--   **Reference File Copying:** Copy a reference to a temporary file instead of the content itself, to work around clipboard limitations.
--   **GitHub Integration**: Copy directly from GitHub repositories using URLs. Includes smart caching for improved performance. See [GitHub URLs Guide](docs/github-urls.md) for details.
+- **MacOS Integration:**  
+  Seamless clipboard operations using native tools (`pbcopy` and `osascript`).
+
+- **GitHub Integration:**  
+  Clone and cache GitHub repositories via URL for fast, offline access and updates.
+
+- **AI-Powered Capabilities:**
+    - **Intelligent File Filtering:**  
+      Use natural language descriptions to select relevant files.
+    - **Smart Filename Generation:**  
+      Automatically generate clear, hyphenated filenames for saved output based on content analysis.
+
+- **Flexible Directory Management:**
+    - **Dynamic Ruleset System:**  
+      Configure inclusion/exclusion rules with a powerful JSON format.
+    - **Multiple Rulesets & Auto-detection:**  
+      Define custom rulesets (e.g., `frontend.json`, `backend.json`) or let Ctree auto-detect settings for common project types (Laravel, SvelteKit, etc.).
+
+- **Versatile Output Options:**
+    - Copy directly to the clipboard.
+    - Save output to a file (with AI-generated names if desired).
+    - Display output in the console.
+    - Stream output for piping.
+    - Copy a reference to a temporary file (to work around clipboard limitations).
 
 ## Prerequisites
 
-Before installing, ensure you have:
-
--   MacOS
--   PHP 8.2 or higher
--   Git (required for GitHub repository support)
--   Composer
+- **MacOS**
+- **PHP 8.2 or higher**
+- **Git** (required for GitHub repository support)
+- **Composer**
 
 ## Installation
 
-1. Install via Composer:
+1. **Install via Composer (globally):**
 
-    ```bash
-    composer global require gregpriday/copy-tree
-    ```
+   ```bash
+   composer global require gregpriday/copy-tree
+   ```
 
-2. Add Composer's global bin to your PATH. Edit `~/.zshrc` or `~/.bashrc` and add:
+2. **Add Composer’s Global Bin to Your PATH:**  
+   Edit your `~/.zshrc` or `~/.bashrc` and add:
 
-    ```bash
-    export PATH="$PATH:$HOME/.composer/vendor/bin"
-    ```
+   ```bash
+   export PATH="$PATH:$HOME/.composer/vendor/bin"
+   ```
 
-3. **Configure OpenAI (Optional, for AI features):**
-    -   Create a `.env` file in `~/.copytree/` with your OpenAI credentials:
+3. **(Optional) Configure AI Features:**  
+   Create a `.env` file in `~/.copytree/` and add your OpenAI credentials:
 
-    ```
-    OPENAI_API_KEY=your-api-key
-    OPENAI_API_ORG=your-org-id
-    ```
+   ```ini
+   OPENAI_API_KEY=your-api-key
+   OPENAI_API_ORG=your-org-id
+   ```
 
-    Replace `your-api-key` and `your-org-id` with your actual OpenAI API key and organization ID.
+   Replace `your-api-key` and `your-org-id` with your actual values.
 
 ## Quick Start
 
-**Copy the current directory:**
+- **Copy the Current Directory:**
 
-```bash
-ctree
-```
+  ```bash
+  ctree
+  ```
 
-**Copy from a GitHub repository:**
+- **Copy from a GitHub Repository:**
 
-```bash
-ctree https://github.com/username/repo/tree/main/src
-```
+  ```bash
+  ctree https://github.com/username/repo/tree/main/src
+  ```
 
-**Use AI to filter files:**
+- **Use AI to Filter Files:**
 
-```bash
-ctree --ai-filter="Find all authentication related files"
-```
+  ```bash
+  ctree --ai-filter="Find all authentication related files"
+  ```
 
 ## Workflows
 
-Ctree is designed to enhance your development workflow when working with AI assistants. We provide detailed workflow documentation for different use cases:
+Ctree is designed to integrate into various development processes. Detailed workflows are available for:
 
--   **[AI-Driven Design Workflow](docs/workflows/design.md)**: A systematic approach to designing web applications using SvelteKit, Tailwind CSS, and Claude. Learn how to:
-    -   Iterate on designs with AI assistance
-    -   Use component-focused refinement
-    -   Manage design systems with Tailwind
-    -   Integrate backend functionality
+- **[AI-Driven Design Workflow](docs/workflows/design.md):**  
+  Iterate on web designs with SvelteKit, Tailwind CSS, and Claude.
 
--   **[AI-Assisted Development Workflow](docs/workflows/development.md)**: A comprehensive guide to developing code features with AI assistance. Covers:
-    -   Test-driven development with AI
-    -   Using AI for code generation and refinement
-    -   Managing large codebases with rulesets
-    -   Efficient context management for AI interactions
+- **[AI-Assisted Development Workflow](docs/workflows/development.md):**  
+  Leverage AI for test-driven development, code generation, and managing large codebases.
 
--   **[AI-Assisted Ruleset Creation Workflow](docs/workflows/rulesets.md)**: A guide to creating and refining `ctree` rulesets with the help of AI. Learn how to:
-    -   Provide comprehensive project context to AI assistants
-    -   Iteratively develop and test rulesets
-    -   Create modular rulesets for different project areas
-    -   Leverage advanced ruleset features
+- **[AI-Assisted Ruleset Creation Workflow](docs/workflows/rulesets.md):**  
+  Create and refine JSON-based rulesets with AI support.
 
--   **[AI-Powered Business Plan Development](docs/workflows/business-plans.md)**: A step-by-step guide to creating a comprehensive business plan and operational system using `ctree` and [Google Gemini](https://gemini.google.com/)'s advanced features. Learn how to:
-    -   Conduct in-depth market research with Gemini Deep Research
-    -   Iteratively refine your business plan with AI assistance
-    -   Use `ctree` to provide full project context to Gemini
-    -   Generate detailed financial projections and strategic documents
-    -   Create and document operational processes using Mermaid diagrams
-    -   Continuously improve your plan with data-driven insights
-
-These workflows are designed to help you maximize the effectiveness of AI assistance in your development process, using Ctree to manage code context and facilitate communication with AI assistants.
+- **[AI-Powered Business Plan Development](docs/workflows/business-plans.md):**  
+  Develop comprehensive business plans with in-depth market research and operational documentation.
 
 ## Advanced Usage
 
 ### GitHub Integration
 
-Ctree maintains a local cache at `~/.copytree/cache` to optimize performance when working with GitHub repositories.
+Ctree caches GitHub repositories in `~/.copytree/cache` for improved performance.
 
 ```bash
-# Copy a specific branch/directory from GitHub
+# Copy a specific branch or directory from GitHub
 ctree https://github.com/username/repo/tree/develop/src
 
 # Clear the cache
@@ -131,117 +122,87 @@ ctree https://github.com/username/repo --no-cache
 
 ### AI Features
 
-#### Intelligent Filtering
+#### Intelligent File Filtering
 
-Use natural language to filter files:
+Filter files using natural language:
 
 ```bash
-# Interactive mode (prompts for description)
+# Interactive mode (prompts for a description)
 ctree --ai-filter
 
-# Direct description
-ctree --ai-filter="Show me all the test files for the authentication system"
+# Provide a filtering description directly
+ctree --ai-filter="Show me all test files for the authentication system"
 ```
 
-Learn more in the [AI Features documentation](docs/ai-features.md).
+For more details, see [AI Features Documentation](docs/ai-features.md).
 
 #### Smart Filename Generation
 
-When saving output to a file, Ctree can automatically generate a descriptive filename:
+Automatically generate descriptive filenames when saving output:
 
 ```bash
-# Saves to ~/.copytree/files with an AI-generated name
 ctree --output
 ```
 
 ### Output Options
 
-```bash
-# Display output in the console
-ctree --display
+- **Display in Console:**  
+  `ctree --display`
 
-# Save to a file with automatic naming (using AI)
-ctree --output
+- **Save to File (AI-generated name):**  
+  `ctree --output`
 
-# Save to a specific file
-ctree --output=my-output-file.txt
+- **Specify Output File:**  
+  `ctree --output=my-output-file.txt`
 
-# Stream output (useful for piping)
-ctree --stream
+- **Stream Output (for piping):**  
+  `ctree --stream`
 
-# Copy a reference to a temporary file instead of the content
-ctree --as-reference
-```
+- **Copy as Reference (temporary file):**  
+  `ctree --as-reference`
 
 ### Git Filtering
 
-Filter files based on Git changes:
+Focus on changes with Git-based options:
 
 ```bash
-# Only include files modified since last commit
+# Only include files modified since the last commit
 ctree --modified
 
-# Show changes between two commits
+# Filter files changed between specific commits
 ctree --changes=abc123:def456
-
-# Compare a commit to HEAD
-ctree --changes=abc123
 ```
 
-The Git filtering options help you focus on specific changes in your repository:
-
-- `--modified` (`-m`): Only include files that have been modified since the last commit
-- `--changes` (`-c`): Filter for files changed between two commits or between a commit and HEAD
-
-These options are useful for:
-- Sharing recent changes with collaborators
-- Reviewing specific commit changes with AI assistants
-- Documenting what changed between two versions
+These options are ideal for sharing recent changes or reviewing specific updates.
 
 ### Ruleset System
 
-Ctree uses a powerful and flexible ruleset system to determine which files to include or exclude.
+Ctree’s flexible ruleset system lets you precisely control file selection:
 
-1. **Configuration Directory**: Ctree automatically creates a `.ctree` directory in your project for storing ruleset configurations.
-2. **Multiple Named Rulesets**: Define multiple rulesets for different purposes (e.g., `frontend.json`, `backend.json`, `docs.json`).
-3. **Project Auto-detection**: Ctree automatically detects and applies appropriate rulesets for known project types (currently Laravel and SvelteKit).
+1. **Configuration:**  
+   Ctree creates a `.ctree` directory in your project to store ruleset configurations.
 
-**Example ruleset (`.ctree/my-ruleset.json`):**
+2. **Multiple Named Rulesets:**  
+   Define and use custom rulesets (e.g., `frontend.json`, `backend.json`).
 
-```json
-{
-    "rules": [
-        [
-            ["folder", "startsWith", "src"],
-            ["extension", "oneOf", ["js", "ts"]]
-        ]
-    ],
-    "globalExcludeRules": [
-        ["folder", "contains", "node_modules"]
-    ],
-    "always": {
-        "include": ["README.md"],
-        "exclude": ["secrets.json"]
-    }
-}
-```
+3. **Auto-detection:**  
+   Ctree auto-selects appropriate rulesets for recognized project types (e.g., Laravel, SvelteKit).
 
-**Using a custom ruleset:**
+To use a custom ruleset, run:
 
 ```bash
 ctree --ruleset=my-ruleset
 ```
 
-**For detailed ruleset documentation, see:**
-
--   [Ruleset Examples](docs/rulesets/examples.md)
--   [Writing Rulesets](docs/rulesets/rulesets.md)
--   [Fields and Operations Reference](docs/rulesets/fields-and-operations.md)
--   [Using Multiple Rulesets](docs/rulesets/multiple-rulesets.md)
+For more details, see:
+- [Ruleset Examples](docs/rulesets/examples.md)
+- [Writing Rulesets](docs/rulesets/rulesets.md)
+- [Fields and Operations Reference](docs/rulesets/fields-and-operations.md)
+- [Using Multiple Rulesets](docs/rulesets/multiple-rulesets.md)
 
 ## Directory Structure
 
-Ctree uses the following directory structure:
+Ctree uses the following directory structure for configuration and output:
 
 ```
 ~/.copytree/
@@ -253,12 +214,12 @@ Ctree uses the following directory structure:
 
 ## Contributing
 
-Contributions are welcome! Please note that this project is MacOS-only, and we currently do not plan to add support for other operating systems.
+Contributions are welcome! Please note that this project is MacOS-only. To contribute:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Submit a pull request.
 
 ## Testing
 
@@ -270,8 +231,8 @@ composer test
 
 ## Security
 
-If you discover security issues, please email [greg@siteorigin.com](mailto:greg@siteorigin.com) rather than using the issue tracker.
+If you discover any security issues, please email [greg@siteorigin.com](mailto:greg@siteorigin.com) rather than using the issue tracker.
 
 ## License
 
-The MIT License (MIT). See [License File](LICENSE.md) for details.
+This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
