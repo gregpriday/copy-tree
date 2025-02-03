@@ -83,6 +83,61 @@ class ExternalSourceIntegrationTest extends TestCase
         $this->assertStringContainsString('external_docs', $output);
     }
 
+    public function test_external_source_integration_excludes_specific_file(): void
+    {
+        // Create a custom ruleset that:
+        // - Includes local files under "src" with extension "txt"
+        // - Specifies an external source using the GitHub URL for the docs folder
+        // - Excludes a specific external file, e.g., "github-urls.md"
+        $ruleset = [
+            'rules' => [
+                [
+                    ['folder', 'startsWith', 'src'],
+                    ['extension', '=', 'txt'],
+                ],
+            ],
+            'globalExcludeRules' => [],
+            'always' => [
+                'include' => [],
+                'exclude' => [],
+            ],
+            'external' => [
+                [
+                    'source' => 'https://github.com/gregpriday/copy-tree/tree/develop/docs',
+                    'destination' => 'external_docs',
+                    'rules' => [
+                        [
+                            ['extension', '=', 'md'],
+                            ['basename', '!=', 'github-urls.md'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $ctreeDir = $this->tempDir.'/.ctree';
+        file_put_contents($ctreeDir.'/custom.json', json_encode($ruleset));
+
+        // Execute the command using our temporary project and our custom ruleset
+        $this->commandTester->execute([
+            'path' => $this->tempDir,
+            '--ruleset' => 'custom',
+            '--display' => true,
+        ]);
+
+        $output = $this->commandTester->getDisplay();
+
+        // Assert that the local files are present in the output
+        $this->assertStringContainsString('local1.txt', $output);
+        $this->assertStringContainsString('local2.txt', $output);
+
+        // Assert that external files are included.
+        $this->assertStringContainsString('ai-features.md', $output);
+        $this->assertStringContainsString('external_docs', $output);
+
+        // Assert that the excluded external file "github-urls.md" is NOT present in the output
+        $this->assertStringNotContainsString('github-urls.md', $output);
+    }
+
     /**
      * Recursively remove a directory and its contents.
      */
