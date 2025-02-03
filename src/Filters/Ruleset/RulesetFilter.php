@@ -15,7 +15,14 @@ use SplFileInfo;
 /**
  * Applies ruleset filters to determine which files to include or exclude.
  *
- * Supports complex rule combinations, including global exclusions, conditional inclusions, and always-include files.
+ * Supports complex rule combinations, including global exclusions, conditional inclusions,
+ * and always-include files.
+ *
+ * Additionally, this class now supports an "external" configuration that defines external folders
+ * to include in the output. Each external item is an array with keys:
+ *   - source: string (absolute/relative path or GitHub URL)
+ *   - destination: string (the virtual destination folder in the output)
+ *   - rules (optional): array of rules to filter the external folder’s contents.
  */
 class RulesetFilter implements FileFilterInterface
 {
@@ -32,6 +39,16 @@ class RulesetFilter implements FileFilterInterface
     private array $alwaysIncludeFiles = [];
 
     private array $alwaysExcludeFiles = [];
+
+    /**
+     * Holds external configuration items.
+     *
+     * Each external item should be an associative array with:
+     * - "source": string,
+     * - "destination": string,
+     * - "rules": (optional) array.
+     */
+    private array $external = [];
 
     private ?string $description = null;
 
@@ -50,6 +67,28 @@ class RulesetFilter implements FileFilterInterface
         $this->description = $description;
 
         return $this;
+    }
+
+    /**
+     * Set external configuration items.
+     *
+     * @param  array  $external  Array of external configuration items.
+     */
+    public function setExternal(array $external): self
+    {
+        $this->external = $external;
+
+        return $this;
+    }
+
+    /**
+     * Get the external configuration items.
+     *
+     * @return array Array of external items.
+     */
+    public function getExternal(): array
+    {
+        return $this->external;
     }
 
     public static function fromJson(string $jsonString, string $basePath): self
@@ -87,14 +126,18 @@ class RulesetFilter implements FileFilterInterface
             }
         }
 
+        if (isset($data['external'])) {
+            $engine->setExternal($data['external']);
+        }
+
         return $engine;
     }
 
     /**
-     * Convert array-based rules to Rule objects
+     * Convert array-based rules to Rule objects.
      *
-     * @param  array  $rules  Array of rule arrays
-     * @return array<Rule> Array of Rule objects
+     * @param  array  $rules  Array of rule arrays.
+     * @return array<Rule> Array of Rule objects.
      */
     private static function convertToRules(array $rules): array
     {
@@ -146,12 +189,12 @@ class RulesetFilter implements FileFilterInterface
      */
     public function filter(array $files, array $context = []): array
     {
-        // If no files provided, scan the base path
+        // If no files provided, scan the base path.
         if (empty($files)) {
             return iterator_to_array($this->getFilteredFiles());
         }
 
-        // Otherwise, filter the provided files
+        // Otherwise, filter the provided files.
         return array_filter($files, function ($file) {
             return $this->shouldIncludeFile($file['file'], $file['path']);
         });
@@ -226,7 +269,7 @@ class RulesetFilter implements FileFilterInterface
      */
     public function shouldApply(array $context = []): bool
     {
-        // RulesetFilter should always apply if it has any rules configured
+        // RulesetFilter should always apply if it has any rules configured.
         return ! empty($this->includeRuleSets)
             || ! empty($this->globalExcludeRules)
             || ! empty($this->alwaysIncludeFiles)
@@ -245,22 +288,22 @@ class RulesetFilter implements FileFilterInterface
 
     private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
-        // Always skip images
+        // Always skip images.
         if ($this->attributeExtractor->isImage($file)) {
             return false;
         }
 
-        // Check always exclude files second
+        // Check always exclude files second.
         if ($this->isAlwaysExcluded($relativePath)) {
             return false;
         }
 
-        // Check always include files first
+        // Check always include files first.
         if ($this->isAlwaysIncluded($relativePath)) {
             return true;
         }
 
-        // Check global exclude rules
+        // Check global exclude rules.
         foreach ($this->globalExcludeRules as $rule) {
             if ($this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return false;
@@ -271,7 +314,7 @@ class RulesetFilter implements FileFilterInterface
             return true;
         }
 
-        // Check include rule sets
+        // Check include rule sets.
         foreach ($this->includeRuleSets as $ruleSet) {
             if ($this->matchesAllRules($file, $ruleSet)) {
                 return true;

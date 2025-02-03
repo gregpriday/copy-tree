@@ -4,6 +4,7 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
 use GregPriday\CopyTree\Filters\FilterPipelineFactory;
+use GregPriday\CopyTree\Utilities\ExternalSourceProcessor;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use RuntimeException;
@@ -35,10 +36,13 @@ class CopyTreeExecutor
             $this->validateConfiguration();
             $pipeline = $this->createPipeline();
             $this->logPipelineConfiguration($pipeline);
-            $files = $this->getInitialFiles();
-            $filteredFiles = $this->executeFilterPipeline($pipeline, $files);
+            $localFiles = $this->getInitialFiles();
+            $filteredFiles = $this->executeFilterPipeline($pipeline, $localFiles);
 
-            return $this->generateOutput($filteredFiles);
+            // Merge external files (if configured) with the filtered local files.
+            $mergedFiles = $this->mergeExternalFiles($filteredFiles);
+
+            return $this->generateOutput($mergedFiles);
         } catch (\Exception $e) {
             $this->handleExecutionError($e);
             throw $e;
@@ -99,6 +103,53 @@ class CopyTreeExecutor
         } catch (\Exception $e) {
             throw new RuntimeException('Pipeline execution failed: '.$e->getMessage(), 0, $e);
         }
+    }
+
+    /**
+     * Merge external files with the local files.
+     *
+     * This method checks for an "external" configuration in the ruleset (via getExternal()),
+     * processes those external items using ExternalSourceProcessor, and then merges
+     * the resulting file list with the local file list.
+     *
+     * In case of duplicate relative paths, a warning is logged and external files override local ones.
+     *
+     * @param  array  $localFiles  The local files array.
+     * @return array The merged file list.
+     */
+    private function mergeExternalFiles(array $localFiles): array
+    {
+        // Assume the RulesetFilter now provides a getExternal() method that returns the external items array.
+        if (! method_exists($this->config->getRuleset(), 'getExternal')) {
+            // No external configuration defined; return local files as is.
+            return $localFiles;
+        }
+
+        $externalItems = $this->config->getRuleset()->getExternal();
+        if (empty($externalItems) || ! is_array($externalItems)) {
+            return $localFiles;
+        }
+
+        // Process the external items.
+        $externalProcessor = new ExternalSourceProcessor($externalItems, $this->config->getBasePath(), $this->io);
+        $externalFiles = $externalProcessor->process();
+
+        // Merge local and external files by keying on the relative file path.
+        $mergedFiles = [];
+        foreach ($localFiles as $file) {
+            $mergedFiles[$file['path']] = $file;
+        }
+        foreach ($externalFiles as $extFile) {
+            if (isset($mergedFiles[$extFile['path']])) {
+                if ($this->io) {
+                    $this->io->warning("Conflict detected for path {$extFile['path']}: external file overriding local file.");
+                }
+            }
+            $mergedFiles[$extFile['path']] = $extFile;
+        }
+
+        // Return merged files as a re-indexed array.
+        return array_values($mergedFiles);
     }
 
     /**
