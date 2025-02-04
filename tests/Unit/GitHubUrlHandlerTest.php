@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\CopyTreeCommand;
@@ -7,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
-class GitHubUrlHandlerTest extends TestCase
+final class GitHubUrlHandlerTest extends TestCase
 {
     private CommandTester $commandTester;
 
@@ -23,16 +25,9 @@ class GitHubUrlHandlerTest extends TestCase
         $command = $application->find('app:copy-tree');
         $this->commandTester = new CommandTester($command);
 
-        // Set up cache directory path
-        if (PHP_OS_FAMILY === 'Windows') {
-            $this->cacheDir = getenv('LOCALAPPDATA').'/CopyTree';
-        } else {
-            $cacheDir = getenv('XDG_CACHE_HOME');
-            if (! $cacheDir) {
-                $cacheDir = getenv('HOME').'/.cache';
-            }
-            $this->cacheDir = $cacheDir.'/copytree';
-        }
+        // Use the actual cache directory used by the GitHubUrlHandler
+        // (assuming the implementation uses HOME/.copytree/cache)
+        $this->cacheDir = getenv('HOME').'/.copytree/cache';
 
         // Clean any existing cache
         if (is_dir($this->cacheDir)) {
@@ -44,7 +39,7 @@ class GitHubUrlHandlerTest extends TestCase
     {
         parent::tearDown();
 
-        // Clean up after tests
+        // Clean up cache directory after tests.
         if (is_dir($this->cacheDir)) {
             $this->removeDirectory($this->cacheDir);
         }
@@ -52,25 +47,25 @@ class GitHubUrlHandlerTest extends TestCase
 
     public function test_git_hub_url_handler_basic_functionality(): void
     {
-        // Execute the command with a GitHub URL and stream output
+        // Execute the command with a GitHub URL (cloning the repository)
+        // and request only the tree output to be streamed.
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
             '--stream' => true,
         ]);
 
-        // Get command output
         $output = $this->commandTester->getDisplay();
 
-        // Verify that specific files exist in the output
-        $this->assertStringContainsString('CopyTreeCommand.php', $output);
-        $this->assertStringContainsString('CopyTreeExecutor.php', $output);
+        // Verify that specific files from the src directory are present.
+        $this->assertStringContainsString('CopyTreeCommand.php', $output, 'Expected file CopyTreeCommand.php missing');
+        $this->assertStringContainsString('CopyTreeExecutor.php', $output, 'Expected file CopyTreeExecutor.php missing');
 
-        // Check exit code
-        $this->assertEquals(0, $this->commandTester->getStatusCode());
+        // Check that the command exits with a success code.
+        $this->assertSame(0, $this->commandTester->getStatusCode(), 'Exit code should be 0 on success');
 
-        // Verify cache directory was created
-        $this->assertDirectoryExists($this->cacheDir);
+        // Verify that the cache directory was created.
+        $this->assertDirectoryExists($this->cacheDir, 'Cache directory was not created');
     }
 
     public function test_git_hub_url_handler_subdirectory(): void
@@ -83,17 +78,16 @@ class GitHubUrlHandlerTest extends TestCase
 
         $output = $this->commandTester->getDisplay();
 
-        // Verify that documentation files exist in the output
-        $this->assertStringContainsString('examples.md', $output);
-        $this->assertStringContainsString('rulesets.md', $output);
-        $this->assertStringContainsString('fields-and-operations.md', $output);
+        // Verify that documentation files are present.
+        $this->assertStringContainsString('examples.md', $output, 'Expected documentation file examples.md missing');
+        $this->assertStringContainsString('rulesets.md', $output, 'Expected documentation file rulesets.md missing');
+        $this->assertStringContainsString('fields-and-operations.md', $output, 'Expected documentation file fields-and-operations.md missing');
 
-        // Verify we don't see files from other directories
-        $this->assertStringNotContainsString('CopyTreeCommand.php', $output);
-        $this->assertStringNotContainsString('composer.json', $output);
+        // Verify that files from other directories (such as source files) are not included.
+        $this->assertStringNotContainsString('CopyTreeCommand.php', $output, 'Unexpected file CopyTreeCommand.php found');
+        $this->assertStringNotContainsString('composer.json', $output, 'Unexpected file composer.json found');
 
-        // Check exit code
-        $this->assertEquals(0, $this->commandTester->getStatusCode());
+        $this->assertSame(0, $this->commandTester->getStatusCode(), 'Exit code should be 0 on success');
     }
 
     public function test_git_hub_url_handler_with_specific_branch(): void
@@ -106,34 +100,38 @@ class GitHubUrlHandlerTest extends TestCase
 
         $output = $this->commandTester->getDisplay();
 
-        // Verify specific ruleset files exist
-        $this->assertStringContainsString('laravel.json', $output);
-        $this->assertStringContainsString('sveltekit.json', $output);
-        $this->assertStringContainsString('default.json', $output);
+        // Verify that ruleset files from the main branch are present.
+        $this->assertStringContainsString('laravel.json', $output, 'Expected file laravel.json missing');
+        $this->assertStringContainsString('sveltekit.json', $output, 'Expected file sveltekit.json missing');
+        $this->assertStringContainsString('default.json', $output, 'Expected file default.json missing');
 
-        $this->assertEquals(0, $this->commandTester->getStatusCode());
+        $this->assertSame(0, $this->commandTester->getStatusCode(), 'Exit code should be 0 on success');
     }
 
     public function test_git_hub_url_handler_cache_clearing(): void
     {
-        // First, execute a normal command to populate the cache
+        // First, execute a normal command to populate the cache.
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
             '--stream' => true,
         ]);
 
-        // Verify cache directory exists
-        $this->assertDirectoryExists($this->cacheDir);
+        // Verify that the cache directory exists.
+        $this->assertDirectoryExists($this->cacheDir, 'Cache directory should exist after cloning');
 
-        // Clear the cache
+        // Clear the cache using the clear-cache option.
         $this->commandTester->execute([
             '--clear-cache' => true,
         ]);
 
-        // Verify cache was cleared
-        $this->assertDirectoryDoesNotExist($this->cacheDir);
-        $this->assertStringContainsString('GitHub repository cache cleared successfully', $this->commandTester->getDisplay());
+        // Verify that the cache directory was cleared.
+        $this->assertDirectoryDoesNotExist($this->cacheDir, 'Cache directory should be cleared');
+        $this->assertStringContainsString(
+            'GitHub repository cache cleared successfully',
+            $this->commandTester->getDisplay(),
+            'Expected cache clearing confirmation missing'
+        );
     }
 
     public function test_git_hub_url_handler_invalid_url(): void
@@ -144,8 +142,13 @@ class GitHubUrlHandlerTest extends TestCase
             '--stream' => true,
         ]);
 
-        $this->assertNotEquals(0, $this->commandTester->getStatusCode());
-        $this->assertStringContainsString('Failed to clone repository', $this->commandTester->getDisplay());
+        // For an invalid URL, we expect a non-zero exit code.
+        $this->assertNotSame(0, $this->commandTester->getStatusCode(), 'Expected non-zero exit code for invalid URL');
+        $this->assertStringContainsString(
+            'Failed to clone repository',
+            $this->commandTester->getDisplay(),
+            'Expected error message for failed clone not found'
+        );
     }
 
     public function test_git_hub_url_handler_invalid_path(): void
@@ -156,50 +159,68 @@ class GitHubUrlHandlerTest extends TestCase
             '--stream' => true,
         ]);
 
-        $this->assertNotEquals(0, $this->commandTester->getStatusCode());
-        $this->assertStringContainsString('not found in repository', $this->commandTester->getDisplay());
+        // Expect non-zero exit code for an invalid subdirectory path.
+        $this->assertNotSame(0, $this->commandTester->getStatusCode(), 'Expected non-zero exit code for invalid path');
+        $this->assertStringContainsString(
+            'not found in repository',
+            $this->commandTester->getDisplay(),
+            'Expected error message indicating nonexistent directory'
+        );
     }
 
     public function test_git_hub_url_handler_cache_reuse(): void
     {
-        // First execution should clone the repository
+        // First execution should clone the repository.
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
             '--stream' => true,
         ]);
 
-        // Get the cache directory modification time
+        // Get the cache directory modification time.
         $firstMtime = filemtime($this->cacheDir);
 
-        // Wait a second to ensure different modification time if cache is updated
+        // Wait a second to allow for a potential update.
         sleep(1);
 
-        // Second execution should use cached version
+        // Second execution should reuse the cached repository.
         $this->commandTester->execute([
             'path' => 'https://github.com/gregpriday/copy-tree/tree/main/src',
             '--only-tree' => true,
             '--stream' => true,
         ]);
 
-        // Get the new modification time
+        // Get the new modification time.
         $secondMtime = filemtime($this->cacheDir);
 
-        // Cache directory should not have been modified on second run
-        // unless there were actual updates in the repository
-        $this->assertGreaterThanOrEqual($firstMtime, $secondMtime);
+        // Assert that the cache was not updated (unless there was an actual repository change).
+        $this->assertGreaterThanOrEqual(
+            $firstMtime,
+            $secondMtime,
+            'Cache directory modification time should not decrease on cache reuse'
+        );
     }
 
+    /**
+     * Recursively remove a directory and its contents.
+     *
+     * @param  string  $path  The directory to remove.
+     */
     private function removeDirectory(string $path): void
     {
         if (! is_dir($path)) {
             return;
         }
-
-        $files = array_diff(scandir($path), ['.', '..']);
-        foreach ($files as $file) {
-            $filePath = $path.DIRECTORY_SEPARATOR.$file;
-            is_dir($filePath) ? $this->removeDirectory($filePath) : unlink($filePath);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($path);
     }

@@ -2,29 +2,25 @@
 
 namespace GregPriday\CopyTree\Filters\Ruleset;
 
-use Generator;
 use GregPriday\CopyTree\Filters\FileFilterInterface;
-use GregPriday\CopyTree\Ruleset\FilteredDirIterator;
-use GregPriday\CopyTree\Ruleset\Rules\FileAttributeExtractor;
-use GregPriday\CopyTree\Ruleset\Rules\Rule;
-use GregPriday\CopyTree\Ruleset\Rules\RuleEvaluator;
+use GregPriday\CopyTree\Filters\Ruleset\Rules\FileAttributeExtractor;
+use GregPriday\CopyTree\Filters\Ruleset\Rules\Rule;
+use GregPriday\CopyTree\Filters\Ruleset\Rules\RuleEvaluator;
 use InvalidArgumentException;
 use RuntimeException;
 use SplFileInfo;
 
 /**
- * Applies ruleset filters to determine which files to include or exclude.
+ * LocalRulesetFilter handles filtering of local files based on a JSON-defined ruleset.
  *
- * Supports complex rule combinations, including global exclusions, conditional inclusions,
- * and always-include files.
+ * This class is responsible for filtering local files using rules, global exclude rules,
+ * and always-include/exclude lists. It now also stores any external configuration provided
+ * in the ruleset JSON so that it can be later used by external processing components.
  *
- * Additionally, this class now supports an "external" configuration that defines external folders
- * to include in the output. Each external item is an array with keys:
- *   - source: string (absolute/relative path or GitHub URL)
- *   - destination: string (the virtual destination folder in the output)
- *   - rules (optional): array of rules to filter the external folder’s contents.
+ * It implements the FileFilterInterface so that upstream consumers of the filtering logic do not
+ * require any changes.
  */
-class RulesetFilter implements FileFilterInterface
+class LocalRulesetFilter implements FileFilterInterface
 {
     private string $basePath;
 
@@ -32,25 +28,39 @@ class RulesetFilter implements FileFilterInterface
 
     private FileAttributeExtractor $attributeExtractor;
 
+    /**
+     * An array of rule sets to include.
+     *
+     * Each rule set is an array of Rule objects or an array representing an "OR" condition.
+     */
     private array $includeRuleSets = [];
 
+    /**
+     * An array of global exclude rules (each a Rule object).
+     */
     private array $globalExcludeRules = [];
 
+    /**
+     * An array of file paths that should always be included.
+     */
     private array $alwaysIncludeFiles = [];
 
+    /**
+     * An array of file paths that should always be excluded.
+     */
     private array $alwaysExcludeFiles = [];
 
     /**
-     * Holds external configuration items.
-     *
-     * Each external item should be an associative array with:
-     * - "source": string,
-     * - "destination": string,
-     * - "rules": (optional) array.
+     * Optional description for the filter (used for logging and debugging).
      */
-    private array $external = [];
-
     private ?string $description = null;
+
+    /**
+     * External configuration items from the ruleset.
+     *
+     * This property will store the content from the "external" key of the ruleset JSON.
+     */
+    private array $externalItems = [];
 
     public function __construct(string $basePath)
     {
@@ -60,7 +70,7 @@ class RulesetFilter implements FileFilterInterface
     }
 
     /**
-     * Set a custom description for this ruleset filter.
+     * Set a custom description for this local ruleset filter.
      */
     public function setDescription(string $description): self
     {
@@ -70,27 +80,13 @@ class RulesetFilter implements FileFilterInterface
     }
 
     /**
-     * Set external configuration items.
+     * Create a LocalRulesetFilter instance from a JSON string.
      *
-     * @param  array  $external  Array of external configuration items.
-     */
-    public function setExternal(array $external): self
-    {
-        $this->external = $external;
-
-        return $this;
-    }
-
-    /**
-     * Get the external configuration items.
+     * @param  string  $jsonString  The JSON string defining the ruleset.
+     * @param  string  $basePath  The base path for file scanning.
      *
-     * @return array Array of external items.
+     * @throws InvalidArgumentException if the JSON is invalid.
      */
-    public function getExternal(): array
-    {
-        return $this->external;
-    }
-
     public static function fromJson(string $jsonString, string $basePath): self
     {
         $data = json_decode($jsonString, true);
@@ -101,6 +97,12 @@ class RulesetFilter implements FileFilterInterface
         return self::fromArray($data, $basePath);
     }
 
+    /**
+     * Create a LocalRulesetFilter instance from an array.
+     *
+     * @param  array  $data  The ruleset data.
+     * @param  string  $basePath  The base path for file scanning.
+     */
     public static function fromArray(array $data, string $basePath): self
     {
         $engine = new self($basePath);
@@ -126,18 +128,31 @@ class RulesetFilter implements FileFilterInterface
             }
         }
 
-        if (isset($data['external'])) {
-            $engine->setExternal($data['external']);
+        // Preserve external configuration instead of ignoring it.
+        if (isset($data['external']) && is_array($data['external'])) {
+            $engine->externalItems = $data['external'];
         }
 
         return $engine;
     }
 
     /**
-     * Convert array-based rules to Rule objects.
+     * Retrieve the external configuration items from the ruleset.
      *
-     * @param  array  $rules  Array of rule arrays.
-     * @return array<Rule> Array of Rule objects.
+     * @return array|null Array of external configuration items, or null if none exist.
+     */
+    public function getExternal(): ?array
+    {
+        return ! empty($this->externalItems) ? $this->externalItems : null;
+    }
+
+    /**
+     * Convert an array of rule definitions into an array of Rule objects.
+     *
+     * Handles simple rules as well as OR conditions.
+     *
+     * @param  array  $rules  Array of rule definitions.
+     * @return array Array of Rule objects or OR-condition arrays.
      */
     private static function convertToRules(array $rules): array
     {
@@ -154,6 +169,11 @@ class RulesetFilter implements FileFilterInterface
         }, $rules);
     }
 
+    /**
+     * Add a new include rule set.
+     *
+     * @param  array  $rules  Array of Rule objects (or OR condition arrays).
+     */
     public function addIncludeRuleSet(array $rules): self
     {
         $this->includeRuleSets[] = $rules;
@@ -161,6 +181,11 @@ class RulesetFilter implements FileFilterInterface
         return $this;
     }
 
+    /**
+     * Add a new global exclude rule.
+     *
+     * @param  Rule  $rule  A Rule object.
+     */
     public function addGlobalExcludeRule(Rule $rule): self
     {
         $this->globalExcludeRules[] = $rule;
@@ -168,6 +193,11 @@ class RulesetFilter implements FileFilterInterface
         return $this;
     }
 
+    /**
+     * Add file paths that should always be included.
+     *
+     * @param  array  $files  Array of relative file paths.
+     */
     public function addAlwaysIncludeFiles(array $files): self
     {
         $this->alwaysIncludeFiles = array_merge($this->alwaysIncludeFiles, $files);
@@ -175,6 +205,11 @@ class RulesetFilter implements FileFilterInterface
         return $this;
     }
 
+    /**
+     * Add file paths that should always be excluded.
+     *
+     * @param  array  $files  Array of relative file paths.
+     */
     public function addAlwaysExcludeFiles(array $files): self
     {
         $this->alwaysExcludeFiles = array_merge($this->alwaysExcludeFiles, $files);
@@ -183,34 +218,35 @@ class RulesetFilter implements FileFilterInterface
     }
 
     /**
-     * Implementation of FileFilterInterface::filter()
+     * Filter the given files based on the defined rules.
      *
-     * If files array is empty, scans the base path. Otherwise, filters the provided files.
+     * If the files array is empty, the base path will be scanned.
+     *
+     * @param  array  $files  Array of files (each an array with 'path' and 'file' keys).
+     * @param  array  $context  Optional context data.
+     * @return array Filtered array of files in the same format as input.
      */
     public function filter(array $files, array $context = []): array
     {
-        // If no files provided, scan the base path.
         if (empty($files)) {
             return iterator_to_array($this->getFilteredFiles());
         }
 
-        // Otherwise, filter the provided files.
         return array_filter($files, function ($file) {
             return $this->shouldIncludeFile($file['file'], $file['path']);
         });
     }
 
     /**
-     * Get filtered files using a generator approach.
+     * Scan the base path and yield filtered files using a generator.
      *
-     * @return Generator<array{path: string, file: SplFileInfo}>
+     * @return \Generator Yields arrays with 'path' and 'file' keys.
      */
-    public function getFilteredFiles(): Generator
+    public function getFilteredFiles(): \Generator
     {
         if (! is_dir($this->basePath)) {
             throw new RuntimeException("Base path does not exist: {$this->basePath}");
         }
-
         $iterator = new \RecursiveIteratorIterator(
             new FilteredDirIterator(
                 $this->basePath,
@@ -218,7 +254,6 @@ class RulesetFilter implements FileFilterInterface
             ),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 $relativePath = $this->getRelativePath($file);
@@ -233,28 +268,25 @@ class RulesetFilter implements FileFilterInterface
     }
 
     /**
-     * Implementation of FileFilterInterface::getDescription()
+     * Return a human-readable description of this filter's configuration.
+     *
+     * @return string Description text.
      */
     public function getDescription(): string
     {
         if ($this->description !== null) {
             return $this->description;
         }
-
         $parts = [];
-
         if (! empty($this->includeRuleSets)) {
             $parts[] = sprintf('%d include rule sets', count($this->includeRuleSets));
         }
-
         if (! empty($this->globalExcludeRules)) {
             $parts[] = sprintf('%d global exclude rules', count($this->globalExcludeRules));
         }
-
         if (! empty($this->alwaysIncludeFiles)) {
             $parts[] = sprintf('%d always-include files', count($this->alwaysIncludeFiles));
         }
-
         if (! empty($this->alwaysExcludeFiles)) {
             $parts[] = sprintf('%d always-exclude files', count($this->alwaysExcludeFiles));
         }
@@ -265,56 +297,63 @@ class RulesetFilter implements FileFilterInterface
     }
 
     /**
-     * Implementation of FileFilterInterface::shouldApply()
+     * Determine if this filter should be applied.
+     *
+     * @param  array  $context  Optional context data.
+     * @return bool True if the filter should be applied.
      */
     public function shouldApply(array $context = []): bool
     {
-        // RulesetFilter should always apply if it has any rules configured.
         return ! empty($this->includeRuleSets)
             || ! empty($this->globalExcludeRules)
             || ! empty($this->alwaysIncludeFiles)
             || ! empty($this->alwaysExcludeFiles);
     }
 
+    /**
+     * Check if a given relative file path is in the always-include list.
+     */
     private function isAlwaysIncluded(string $relativePath): bool
     {
         return in_array($relativePath, $this->alwaysIncludeFiles);
     }
 
+    /**
+     * Check if a given relative file path is in the always-exclude list.
+     */
     private function isAlwaysExcluded(string $relativePath): bool
     {
         return in_array($relativePath, $this->alwaysExcludeFiles);
     }
 
+    /**
+     * Determine if a file should be included based on the filtering rules.
+     */
     private function shouldIncludeFile(SplFileInfo $file, string $relativePath): bool
     {
         // Always skip images.
         if ($this->attributeExtractor->isImage($file)) {
             return false;
         }
-
-        // Check always exclude files second.
+        // Check always-exclude list first.
         if ($this->isAlwaysExcluded($relativePath)) {
             return false;
         }
-
-        // Check always include files first.
+        // If file is in the always-include list, include it immediately.
         if ($this->isAlwaysIncluded($relativePath)) {
             return true;
         }
-
-        // Check global exclude rules.
+        // Apply global exclude rules.
         foreach ($this->globalExcludeRules as $rule) {
             if ($this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return false;
             }
         }
-
+        // If no include rule sets are defined, include the file.
         if (empty($this->includeRuleSets)) {
             return true;
         }
-
-        // Check include rule sets.
+        // Check each include rule set; if the file matches all rules in any set, include it.
         foreach ($this->includeRuleSets as $ruleSet) {
             if ($this->matchesAllRules($file, $ruleSet)) {
                 return true;
@@ -324,6 +363,9 @@ class RulesetFilter implements FileFilterInterface
         return false;
     }
 
+    /**
+     * Determine if a file matches all the rules in a given rule set.
+     */
     private function matchesAllRules(SplFileInfo $file, array $rules): bool
     {
         foreach ($rules as $rule) {
@@ -341,6 +383,9 @@ class RulesetFilter implements FileFilterInterface
         return true;
     }
 
+    /**
+     * Determine if a file matches any one of the provided rules.
+     */
     private function matchesAnyRule(SplFileInfo $file, array $rules): bool
     {
         foreach ($rules as $rule) {
@@ -352,6 +397,9 @@ class RulesetFilter implements FileFilterInterface
         return false;
     }
 
+    /**
+     * Get the relative file path from the base path.
+     */
     private function getRelativePath(SplFileInfo $file): string
     {
         return str_replace($this->basePath.'/', '', $file->getRealPath());

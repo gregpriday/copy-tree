@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Ruleset;
+namespace GregPriday\CopyTree\Filters\Ruleset;
 
 /**
  * Guesses the appropriate ruleset based on project structure.

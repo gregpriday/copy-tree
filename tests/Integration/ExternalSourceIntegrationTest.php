@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GregPriday\CopyTree\Tests\Integration;
 
 use GregPriday\CopyTree\Tests\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
 
-class ExternalSourceIntegrationTest extends TestCase
+final class ExternalSourceIntegrationTest extends TestCase
 {
     private string $tempDir;
 
@@ -140,22 +144,25 @@ class ExternalSourceIntegrationTest extends TestCase
 
     /**
      * Recursively remove a directory and its contents.
+     *
+     * @param  string  $dir  The directory to remove.
      */
     private function removeDirectory(string $dir): void
     {
         if (! is_dir($dir)) {
             return;
         }
-
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $filePath = $dir.DIRECTORY_SEPARATOR.$file;
-            if (is_dir($filePath)) {
-                $this->removeDirectory($filePath);
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
             } else {
-                @unlink($filePath);
+                unlink($file->getRealPath());
             }
         }
-        @rmdir($dir);
+        rmdir($dir);
     }
 }

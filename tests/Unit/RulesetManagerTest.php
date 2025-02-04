@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GregPriday\CopyTree\Tests\Unit;
 
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
-use GregPriday\CopyTree\Ruleset\RulesetManager;
+use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Tests\TestCase;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class RulesetManagerTest extends TestCase
+final class RulesetManagerTest extends TestCase
 {
     private string $testDir;
 
@@ -19,7 +21,10 @@ class RulesetManagerTest extends TestCase
     {
         parent::setUp();
         $this->testDir = sys_get_temp_dir().'/ruleset_test_'.uniqid();
-        mkdir($this->testDir.'/.ctree', 0777, true);
+        // Create the .ctree directory inside the temporary test directory.
+        if (! mkdir($this->testDir.'/.ctree', 0777, true) && ! is_dir($this->testDir.'/.ctree')) {
+            throw new \RuntimeException("Unable to create directory: {$this->testDir}/.ctree");
+        }
         $this->io = $this->createMock(SymfonyStyle::class);
         $this->manager = new RulesetManager($this->testDir, $this->io);
     }
@@ -47,26 +52,28 @@ class RulesetManagerTest extends TestCase
             json_encode($workspaceConfig)
         );
 
-        $ruleset = $this->manager->getRuleset('auto', 'test');
-        $this->assertInstanceOf(RulesetFilter::class, $ruleset);
+        // Note: the second argument for workspace is no longer accepted;
+        // so we simply call getRuleset('auto')
+        $ruleset = $this->manager->getRuleset('auto');
+        $this->assertInstanceOf(LocalRulesetFilter::class, $ruleset);
     }
 
     public function test_create_empty_ruleset(): void
     {
         $ruleset = $this->manager->createEmptyRuleset();
-        $this->assertInstanceOf(RulesetFilter::class, $ruleset);
+        $this->assertInstanceOf(LocalRulesetFilter::class, $ruleset);
     }
 
     public function test_create_ruleset_from_glob(): void
     {
         $ruleset = $this->manager->createRulesetFromGlob('*.php');
-        $this->assertInstanceOf(RulesetFilter::class, $ruleset);
+        $this->assertInstanceOf(LocalRulesetFilter::class, $ruleset);
     }
 
     public function test_create_ruleset_from_globs(): void
     {
         $ruleset = $this->manager->createRulesetFromGlobs(['*.php', '*.js']);
-        $this->assertInstanceOf(RulesetFilter::class, $ruleset);
+        $this->assertInstanceOf(LocalRulesetFilter::class, $ruleset);
     }
 
     public function test_get_ruleset_with_custom_ruleset(): void
@@ -83,7 +90,7 @@ class RulesetManagerTest extends TestCase
         );
 
         $ruleset = $this->manager->getRuleset('custom');
-        $this->assertInstanceOf(RulesetFilter::class, $ruleset);
+        $this->assertInstanceOf(LocalRulesetFilter::class, $ruleset);
     }
 
     public function test_get_available_rulesets(): void
@@ -93,16 +100,26 @@ class RulesetManagerTest extends TestCase
         $this->assertContains('auto', $rulesets);
     }
 
+    /**
+     * Recursively remove a directory and its contents.
+     *
+     * @param  string  $dir  The directory to remove.
+     */
     private function removeDirectory(string $dir): void
     {
         if (! is_dir($dir)) {
             return;
         }
-
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir.'/'.$file;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+            } else {
+                unlink($file->getRealPath());
+            }
         }
         rmdir($dir);
     }

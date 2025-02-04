@@ -1,15 +1,29 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\External;
 
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
 use GregPriday\CopyTree\Utilities\Git\GitHubUrlHandler;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class ExternalSourceProcessor
+/**
+ * ExternalSourceHandler processes external configuration items and returns a merged list of files.
+ *
+ * This class handles external sources defined under the "external" key by:
+ *  - Resolving external sources (either GitHub URLs or local directories).
+ *  - Applying optional filtering rules using a LocalRulesetFilter.
+ *  - Remapping file paths by prefixing them with the configured destination.
+ *
+ * The output is an array of files in the following format:
+ *   [
+ *     ['path' => 'remapped/path/to/file.ext', 'file' => SplFileInfo],
+ *     ...
+ *   ]
+ */
+class ExternalSourceHandler
 {
     private array $externalItems;
 
@@ -20,9 +34,13 @@ class ExternalSourceProcessor
     /**
      * Constructor.
      *
-     * @param  array  $externalItems  Array of external items (from the "external" key)
-     * @param  string  $basePath  The base path of the main project (used to resolve relative paths)
-     * @param  SymfonyStyle|null  $io  Optional IO interface for logging/warnings
+     * @param  array  $externalItems  Array of external items from the configuration.
+     *                                Each item must have:
+     *                                - "source": a GitHub URL or a local path.
+     *                                - "destination": the prefix to remap file paths.
+     *                                Optionally, an "rules" key can provide filtering rules.
+     * @param  string  $basePath  The base path of the main project (used to resolve relative paths).
+     * @param  SymfonyStyle|null  $io  Optional IO interface for logging and warnings.
      */
     public function __construct(array $externalItems, string $basePath, ?SymfonyStyle $io = null)
     {
@@ -34,7 +52,7 @@ class ExternalSourceProcessor
     /**
      * Process all external items and return a merged list of files with remapped paths.
      *
-     * @return array Array of files in the format: ['path' => string, 'file' => SplFileInfo]
+     * @return array An array of files in the format: ['path' => string, 'file' => SplFileInfo].
      */
     public function process(): array
     {
@@ -70,17 +88,17 @@ class ExternalSourceProcessor
                 $this->io->writeln('Found '.count($files)." files in external source: {$resolvedSource}", SymfonyStyle::VERBOSITY_VERBOSE);
             }
 
-            // Apply optional filtering if "rules" are provided.
+            // Apply external filtering rules if provided.
             if (is_array($rules)) {
                 try {
-                    $externalRuleset = RulesetFilter::fromArray(['rules' => $rules], $resolvedSource);
+                    // Build a temporary ruleset with the provided rules and apply it.
+                    $externalRuleset = LocalRulesetFilter::fromArray(['rules' => $rules], $resolvedSource);
                     $files = $externalRuleset->filter($files);
                 } catch (\Exception $e) {
                     if ($this->io) {
                         $this->io->warning("Failed to apply filtering rules for external source {$source}: ".$e->getMessage());
                     }
-                    // Decide whether to continue without filtering or skip the item.
-                    // Here we continue without filtering.
+                    // Continue without filtering if an error occurs.
                 }
             }
 
@@ -95,13 +113,14 @@ class ExternalSourceProcessor
     }
 
     /**
-     * Resolve the source path.
+     * Resolve the external source path.
      *
-     * If the source is a GitHub URL, uses GitHubUrlHandler.
-     * If the source is a relative path, resolves it relative to the main basePath.
-     * If absolute, uses it as given.
+     * - If the source is a GitHub URL, use GitHubUrlHandler to clone or update the repository.
+     * - If the source is an absolute path, use it directly.
+     * - Otherwise, resolve it relative to the main project base path.
      *
-     * @return string|null Resolved absolute path or null if resolution fails.
+     * @param  string  $source  The source string.
+     * @return string|null The resolved absolute path or null if resolution fails.
      */
     private function resolveSource(string $source): ?string
     {
@@ -110,7 +129,7 @@ class ExternalSourceProcessor
             try {
                 $handler = new GitHubUrlHandler($source);
 
-                // getFiles() returns the local directory path of the cloned/fetched repository or subdirectory.
+                // getFiles() returns the local directory path of the cloned or updated repository (or subdirectory).
                 return $handler->getFiles();
             } catch (\Exception $e) {
                 if ($this->io) {
@@ -126,14 +145,17 @@ class ExternalSourceProcessor
             return is_dir($source) ? realpath($source) : null;
         }
 
-        // Otherwise, treat as a relative path from the main basePath.
+        // Otherwise, treat the source as a relative path from the main project basePath.
         $resolved = realpath($this->basePath.DIRECTORY_SEPARATOR.$source);
 
         return ($resolved !== false && is_dir($resolved)) ? $resolved : null;
     }
 
     /**
-     * Determine if a given path is absolute.
+     * Check if a given path is absolute.
+     *
+     * @param  string  $path  The path to check.
+     * @return bool True if the path is absolute, false otherwise.
      */
     private function isAbsolutePath(string $path): bool
     {
@@ -148,8 +170,11 @@ class ExternalSourceProcessor
      * Recursively scan a directory and return an array of files.
      *
      * Each file is returned as an associative array with keys:
-     * - 'path': The file path relative to the external source root.
-     * - 'file': The SplFileInfo object.
+     *   - 'path': The file path relative to the external source root.
+     *   - 'file': The SplFileInfo object.
+     *
+     * @param  string  $directory  The directory to scan.
+     * @return array The array of scanned files.
      */
     private function scanDirectory(string $directory): array
     {
@@ -157,6 +182,7 @@ class ExternalSourceProcessor
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
         );
+
         foreach ($iterator as $file) {
             /** @var SplFileInfo $file */
             if ($file->isFile()) {

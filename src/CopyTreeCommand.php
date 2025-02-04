@@ -4,7 +4,7 @@ namespace GregPriday\CopyTree;
 
 use GregPriday\CopyTree\Filters\FilterConfiguration;
 use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
-use GregPriday\CopyTree\Ruleset\RulesetManager;
+use GregPriday\CopyTree\Filters\Ruleset\RulesetManager;
 use GregPriday\CopyTree\Utilities\Git\GitHubUrlHandler;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;

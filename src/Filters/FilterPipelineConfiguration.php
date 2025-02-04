@@ -2,14 +2,14 @@
 
 namespace GregPriday\CopyTree\Filters;
 
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
 
 class FilterPipelineConfiguration
 {
     public function __construct(
         private readonly string $basePath,
         private readonly FilterConfiguration $filterConfig,
-        private readonly RulesetFilter $ruleset
+        private readonly LocalRulesetFilter $ruleset
     ) {}
 
     public function getBasePath(): string
@@ -22,7 +22,7 @@ class FilterPipelineConfiguration
         return $this->filterConfig;
     }
 
-    public function getRuleset(): RulesetFilter
+    public function getRuleset(): LocalRulesetFilter
     {
         return $this->ruleset;
     }

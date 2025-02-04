@@ -2,9 +2,9 @@
 
 namespace GregPriday\CopyTree;
 
+use GregPriday\CopyTree\External\ExternalSourceHandler;
 use GregPriday\CopyTree\Filters\FilterPipelineConfiguration;
 use GregPriday\CopyTree\Filters\FilterPipelineFactory;
-use GregPriday\CopyTree\Utilities\ExternalSourceProcessor;
 use GregPriday\CopyTree\Views\FileContentsView;
 use GregPriday\CopyTree\Views\FileTreeView;
 use RuntimeException;
@@ -36,6 +36,7 @@ class CopyTreeExecutor
             $this->validateConfiguration();
             $pipeline = $this->createPipeline();
             $this->logPipelineConfiguration($pipeline);
+
             $localFiles = $this->getInitialFiles();
             $filteredFiles = $this->executeFilterPipeline($pipeline, $localFiles);
 
@@ -108,8 +109,8 @@ class CopyTreeExecutor
     /**
      * Merge external files with the local files.
      *
-     * This method checks for an "external" configuration in the ruleset (via getExternal()),
-     * processes those external items using ExternalSourceProcessor, and then merges
+     * This method checks for external configuration (via getExternal()),
+     * processes those external items using ExternalSourceHandler, and then merges
      * the resulting file list with the local file list.
      *
      * In case of duplicate relative paths, a warning is logged and external files override local ones.
@@ -119,22 +120,17 @@ class CopyTreeExecutor
      */
     private function mergeExternalFiles(array $localFiles): array
     {
-        // Assume the RulesetFilter now provides a getExternal() method that returns the external items array.
-        if (! method_exists($this->config->getRuleset(), 'getExternal')) {
-            // No external configuration defined; return local files as is.
-            return $localFiles;
-        }
-
+        // Retrieve external configuration from the ruleset.
         $externalItems = $this->config->getRuleset()->getExternal();
-        if (empty($externalItems) || ! is_array($externalItems)) {
+        if (empty($externalItems)) {
             return $localFiles;
         }
 
-        // Process the external items.
-        $externalProcessor = new ExternalSourceProcessor($externalItems, $this->config->getBasePath(), $this->io);
+        // Process external items using the ExternalSourceHandler.
+        $externalProcessor = new ExternalSourceHandler($externalItems, $this->config->getBasePath(), $this->io);
         $externalFiles = $externalProcessor->process();
 
-        // Merge local and external files by keying on the relative file path.
+        // Merge local and external files keyed by their relative path.
         $mergedFiles = [];
         foreach ($localFiles as $file) {
             $mergedFiles[$file['path']] = $file;
@@ -148,7 +144,6 @@ class CopyTreeExecutor
             $mergedFiles[$extFile['path']] = $extFile;
         }
 
-        // Return merged files as a re-indexed array.
         return array_values($mergedFiles);
     }
 
@@ -163,15 +158,15 @@ class CopyTreeExecutor
      */
     private function generateOutput(array $filteredFiles): array
     {
-        // Generate the tree view (XML markup provided by the view)
+        // Generate the tree view.
         $treeOutput = FileTreeView::render($filteredFiles);
 
-        // Start with a namespaced root element and declare the namespace.
-        $combinedOutput = '<ct:project>'."\n";
+        // Start with a namespaced root element.
+        $combinedOutput = "<ct:project>\n";
         $combinedOutput .= "<ct:tree>\n".$treeOutput."\n</ct:tree>\n";
 
         if (! $this->onlyTree) {
-            // Only generate file contents if required
+            // Generate file contents output if required.
             $fileContentsOutput = FileContentsView::render(
                 $filteredFiles,
                 $this->config->getFilterConfig()->getMaxLines()
@@ -216,21 +211,12 @@ class CopyTreeExecutor
         }
 
         if ($pipeline->hasFilters()) {
-            $this->io->writeln(
-                'Configured filters:',
-                OutputInterface::VERBOSITY_VERBOSE
-            );
+            $this->io->writeln('Configured filters:', OutputInterface::VERBOSITY_VERBOSE);
             foreach ($pipeline->getFilterDescriptions() as $description) {
-                $this->io->writeln(
-                    "- {$description}",
-                    OutputInterface::VERBOSITY_VERBOSE
-                );
+                $this->io->writeln("- {$description}", OutputInterface::VERBOSITY_VERBOSE);
             }
         } else {
-            $this->io->writeln(
-                'No filters configured, using raw file list',
-                OutputInterface::VERBOSITY_VERBOSE
-            );
+            $this->io->writeln('No filters configured, using raw file list', OutputInterface::VERBOSITY_VERBOSE);
         }
     }
 }

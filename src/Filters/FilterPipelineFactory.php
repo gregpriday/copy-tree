@@ -6,7 +6,7 @@ use GregPriday\CopyTree\Filters\AI\JinaCodeSearchFilter;
 use GregPriday\CopyTree\Filters\AI\OpenAIFilter;
 use GregPriday\CopyTree\Filters\Git\ChangeFilter;
 use GregPriday\CopyTree\Filters\Git\ModifiedFilter;
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
@@ -14,40 +14,42 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * This class handles the creation of filter pipelines based on command options
  * and configuration settings, ensuring proper order and compatibility of filters.
+ *
+ * It now uses the LocalRulesetFilter (local file filtering only) instead of the old RulesetFilter.
  */
 class FilterPipelineFactory
 {
     /**
      * Create a filter pipeline based on command options.
      *
-     * @param  string  $basePath  Base path for file operations
-     * @param  array  $options  Command options array
-     * @param  RulesetFilter|null  $ruleset  Optional preconfigured ruleset filter
-     * @param  SymfonyStyle|null  $io  Optional IO interface for logging
-     * @return FilterPipelineManager Configured pipeline manager
+     * @param  string  $basePath  Base path for file operations.
+     * @param  array  $options  Command options array.
+     * @param  LocalRulesetFilter|null  $ruleset  Optional preconfigured local ruleset filter.
+     * @param  SymfonyStyle|null  $io  Optional IO interface for logging.
+     * @return FilterPipelineManager Configured pipeline manager.
      */
     public function createPipeline(
         string $basePath,
         array $options,
-        ?RulesetFilter $ruleset = null,
+        ?LocalRulesetFilter $ruleset = null,
         ?SymfonyStyle $io = null
     ): FilterPipelineManager {
         $pipeline = new FilterPipelineManager($io);
 
-        // Add ruleset filter first if provided
+        // Add local ruleset filter first if provided.
         if ($ruleset !== null) {
             $pipeline->addFilter($ruleset);
         }
 
-        // Add Git filters if requested
-        // Note: changes and modified are mutually exclusive
+        // Add Git filters if requested.
+        // Note: changes and modified are mutually exclusive.
         if (! empty($options['changes'])) {
             $this->addChangeFilter($pipeline, $basePath, $options['changes']);
         } elseif (! empty($options['modified'])) {
             $this->addModifiedFilter($pipeline, $basePath);
         }
 
-        // Add AI filters if requested
+        // Add AI filters if requested.
         if (! empty($options['ai-filter'])) {
             $this->addAiFilters($pipeline, $options['ai-filter']);
         }
@@ -61,13 +63,15 @@ class FilterPipelineFactory
 
     /**
      * Add Git change filter to the pipeline.
+     *
+     * @param  string  $changes  Changes in the format "commit1:commit2".
      */
     private function addChangeFilter(
         FilterPipelineManager $pipeline,
         string $basePath,
         string $changes
     ): void {
-        // Parse the commits from the changes parameter
+        // Parse the commits from the changes parameter.
         $commits = explode(':', $changes);
         $fromCommit = $commits[0];
         $toCommit = $commits[1] ?? 'HEAD';
@@ -76,7 +80,7 @@ class FilterPipelineFactory
             $filter = new ChangeFilter($basePath, $fromCommit, $toCommit);
             $pipeline->addFilter($filter);
         } catch (\Exception $e) {
-            // Log error but continue - filter will handle error in pipeline
+            // Log error but continue – the filter will handle errors in the pipeline.
             if ($pipeline->getIo()) {
                 $pipeline->getIo()->warning(
                     "Failed to create Git change filter: {$e->getMessage()}"
@@ -96,7 +100,7 @@ class FilterPipelineFactory
             $filter = new ModifiedFilter($basePath);
             $pipeline->addFilter($filter);
         } catch (\Exception $e) {
-            // Log error but continue - filter will handle error in pipeline
+            // Log error but continue.
             if ($pipeline->getIo()) {
                 $pipeline->getIo()->warning(
                     "Failed to create Git modified filter: {$e->getMessage()}"
@@ -108,20 +112,20 @@ class FilterPipelineFactory
     /**
      * Add AI filters to the pipeline based on configuration.
      *
-     * @param  string|bool  $aiFilterOption  AI filter configuration from command options
+     * @param  string|bool  $aiFilterOption  AI filter configuration from command options.
      */
     private function addAiFilters(
         FilterPipelineManager $pipeline,
         string|bool $aiFilterOption
     ): void {
-        // Skip if AI filtering is not enabled
+        // Skip if AI filtering is not enabled.
         if ($aiFilterOption === false) {
             return;
         }
 
         $description = is_string($aiFilterOption) ? $aiFilterOption : '';
 
-        // If no specific description provided, the IO interface should have prompted for one
+        // If no specific description provided, prompt the user via IO.
         if (empty($description) && $pipeline->getIo()) {
             $description = $pipeline->getIo()->ask('Enter your filtering description');
         }
@@ -130,7 +134,7 @@ class FilterPipelineFactory
             return;
         }
 
-        // Add OpenAI filter
+        // Add OpenAI filter.
         try {
             $openaiFilter = new OpenAIFilter($description);
             $pipeline->addFilter($openaiFilter);
@@ -146,14 +150,14 @@ class FilterPipelineFactory
     /**
      * Add Jina AI search filter to the pipeline.
      *
-     * @param  FilterPipelineManager  $pipeline  The filter pipeline
-     * @param  string|bool  $query  The search query
+     * @param  FilterPipelineManager  $pipeline  The filter pipeline.
+     * @param  string|bool  $query  The search query.
      */
     private function addSearchFilter(
         FilterPipelineManager $pipeline,
         string $query
     ): void {
-        // If no specific query provided, the IO interface should have prompted for one
+        // If no specific query is provided, prompt the user via IO.
         if (empty($query) && $pipeline->getIo()) {
             $query = $pipeline->getIo()->ask('Enter your search query');
         }
@@ -162,7 +166,7 @@ class FilterPipelineFactory
             return;
         }
 
-        // Add Jina search filter
+        // Add Jina search filter.
         try {
             $searchFilter = new JinaCodeSearchFilter($query);
             $pipeline->addFilter($searchFilter);

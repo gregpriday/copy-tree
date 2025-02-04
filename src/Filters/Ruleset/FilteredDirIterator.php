@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Ruleset;
+namespace GregPriday\CopyTree\Filters\Ruleset;
 
 use RecursiveDirectoryIterator;
 use TOGoS_GitIgnore_Ruleset;
