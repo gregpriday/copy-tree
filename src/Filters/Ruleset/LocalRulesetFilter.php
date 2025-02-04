@@ -2,11 +2,11 @@
 
 namespace GregPriday\CopyTree\Filters\Ruleset;
 
-use Generator;
 use GregPriday\CopyTree\Filters\FileFilterInterface;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\FileAttributeExtractor;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\Rule;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\RuleEvaluator;
+use GregPriday\CopyTree\Filters\Ruleset\FilteredDirIterator; // Added use statement for FilteredDirIterator
 use InvalidArgumentException;
 use RuntimeException;
 use SplFileInfo;
@@ -68,7 +68,6 @@ class LocalRulesetFilter implements FileFilterInterface
     public function setDescription(string $description): self
     {
         $this->description = $description;
-
         return $this;
     }
 
@@ -84,9 +83,8 @@ class LocalRulesetFilter implements FileFilterInterface
     {
         $data = json_decode($jsonString, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new InvalidArgumentException('Invalid JSON string: '.json_last_error_msg());
+            throw new InvalidArgumentException('Invalid JSON string: ' . json_last_error_msg());
         }
-
         return self::fromArray($data, $basePath);
     }
 
@@ -121,7 +119,7 @@ class LocalRulesetFilter implements FileFilterInterface
             }
         }
 
-        // Note: Any "external" configuration is intentionally ignored in this local filter.
+        // External configuration is intentionally ignored in this local filter.
 
         return $engine;
     }
@@ -144,7 +142,6 @@ class LocalRulesetFilter implements FileFilterInterface
                     'rules' => array_map(fn ($r) => Rule::fromArray($r), $rule[1]),
                 ];
             }
-
             return Rule::fromArray($rule);
         }, $rules);
     }
@@ -157,7 +154,6 @@ class LocalRulesetFilter implements FileFilterInterface
     public function addIncludeRuleSet(array $rules): self
     {
         $this->includeRuleSets[] = $rules;
-
         return $this;
     }
 
@@ -169,7 +165,6 @@ class LocalRulesetFilter implements FileFilterInterface
     public function addGlobalExcludeRule(Rule $rule): self
     {
         $this->globalExcludeRules[] = $rule;
-
         return $this;
     }
 
@@ -181,7 +176,6 @@ class LocalRulesetFilter implements FileFilterInterface
     public function addAlwaysIncludeFiles(array $files): self
     {
         $this->alwaysIncludeFiles = array_merge($this->alwaysIncludeFiles, $files);
-
         return $this;
     }
 
@@ -193,7 +187,6 @@ class LocalRulesetFilter implements FileFilterInterface
     public function addAlwaysExcludeFiles(array $files): self
     {
         $this->alwaysExcludeFiles = array_merge($this->alwaysExcludeFiles, $files);
-
         return $this;
     }
 
@@ -204,14 +197,13 @@ class LocalRulesetFilter implements FileFilterInterface
      *
      * @param  array  $files  Array of files (each an array with 'path' and 'file' keys).
      * @param  array  $context  Optional context data.
-     * @return array Filtered array of files.
+     * @return array Filtered array of files in the same format as input.
      */
     public function filter(array $files, array $context = []): array
     {
         if (empty($files)) {
             return iterator_to_array($this->getFilteredFiles());
         }
-
         return array_filter($files, function ($file) {
             return $this->shouldIncludeFile($file['file'], $file['path']);
         });
@@ -220,11 +212,11 @@ class LocalRulesetFilter implements FileFilterInterface
     /**
      * Scan the base path and yield filtered files using a generator.
      *
-     * @return Generator Yields arrays with 'path' and 'file' keys.
+     * @return \Generator Yields arrays with 'path' and 'file' keys.
      */
-    public function getFilteredFiles(): Generator
+    public function getFilteredFiles(): \Generator
     {
-        if (! is_dir($this->basePath)) {
+        if (!is_dir($this->basePath)) {
             throw new RuntimeException("Base path does not exist: {$this->basePath}");
         }
 
@@ -261,22 +253,22 @@ class LocalRulesetFilter implements FileFilterInterface
         }
 
         $parts = [];
-        if (! empty($this->includeRuleSets)) {
+        if (!empty($this->includeRuleSets)) {
             $parts[] = sprintf('%d include rule sets', count($this->includeRuleSets));
         }
-        if (! empty($this->globalExcludeRules)) {
+        if (!empty($this->globalExcludeRules)) {
             $parts[] = sprintf('%d global exclude rules', count($this->globalExcludeRules));
         }
-        if (! empty($this->alwaysIncludeFiles)) {
+        if (!empty($this->alwaysIncludeFiles)) {
             $parts[] = sprintf('%d always-include files', count($this->alwaysIncludeFiles));
         }
-        if (! empty($this->alwaysExcludeFiles)) {
+        if (!empty($this->alwaysExcludeFiles)) {
             $parts[] = sprintf('%d always-exclude files', count($this->alwaysExcludeFiles));
         }
 
         return empty($parts)
             ? 'No rules configured'
-            : 'Ruleset filter with '.implode(', ', $parts);
+            : 'Ruleset filter with ' . implode(', ', $parts);
     }
 
     /**
@@ -287,10 +279,10 @@ class LocalRulesetFilter implements FileFilterInterface
      */
     public function shouldApply(array $context = []): bool
     {
-        return ! empty($this->includeRuleSets)
-            || ! empty($this->globalExcludeRules)
-            || ! empty($this->alwaysIncludeFiles)
-            || ! empty($this->alwaysExcludeFiles);
+        return !empty($this->includeRuleSets)
+            || !empty($this->globalExcludeRules)
+            || !empty($this->alwaysIncludeFiles)
+            || !empty($this->alwaysExcludeFiles);
     }
 
     /**
@@ -358,16 +350,15 @@ class LocalRulesetFilter implements FileFilterInterface
     {
         foreach ($rules as $rule) {
             if (is_array($rule) && isset($rule['type']) && $rule['type'] === 'OR') {
-                if (! $this->matchesAnyRule($file, $rule['rules'])) {
+                if (!$this->matchesAnyRule($file, $rule['rules'])) {
                     return false;
                 }
             } elseif ($rule instanceof Rule) {
-                if (! $this->ruleEvaluator->evaluateRule($rule, $file)) {
+                if (!$this->ruleEvaluator->evaluateRule($rule, $file)) {
                     return false;
                 }
             }
         }
-
         return true;
     }
 
@@ -381,7 +372,6 @@ class LocalRulesetFilter implements FileFilterInterface
                 return true;
             }
         }
-
         return false;
     }
 
@@ -390,6 +380,6 @@ class LocalRulesetFilter implements FileFilterInterface
      */
     private function getRelativePath(SplFileInfo $file): string
     {
-        return str_replace($this->basePath.'/', '', $file->getRealPath());
+        return str_replace($this->basePath . '/', '', $file->getRealPath());
     }
 }
