@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\CopyTreeCommand;
+use GregPriday\CopyTree\Tests\FilesystemHelperTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
 final class GitHubUrlHandlerTest extends TestCase
 {
+    use FilesystemHelperTrait;
+
     private CommandTester $commandTester;
 
     private string $cacheDir;
@@ -199,29 +202,5 @@ final class GitHubUrlHandlerTest extends TestCase
             $secondMtime,
             'Cache directory modification time should not decrease on cache reuse'
         );
-    }
-
-    /**
-     * Recursively remove a directory and its contents.
-     *
-     * @param  string  $path  The directory to remove.
-     */
-    private function removeDirectory(string $path): void
-    {
-        if (! is_dir($path)) {
-            return;
-        }
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($path);
     }
 }

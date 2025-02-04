@@ -2,12 +2,15 @@
 
 namespace GregPriday\CopyTree\Tests\Integration;
 
+use GregPriday\CopyTree\Tests\FilesystemHelperTrait;
 use GregPriday\CopyTree\Tests\TestCase;
 use GregPriday\CopyTree\Utilities\OpenAI\OpenAIFileFilter;
 use SplFileInfo;
 
 class OpenAIFileFilterTest extends TestCase
 {
+    use FilesystemHelperTrait;
+
     private string $testDir;
 
     private OpenAIFileFilter $filter;
@@ -119,19 +122,5 @@ class OpenAIFileFilterTest extends TestCase
         // Non-authentication files should be excluded
         $this->assertNotContains('app/Controllers/HomeController.php', $filteredPaths);
         $this->assertNotContains('README.md', $filteredPaths);
-    }
-
-    private function removeDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir.'/'.$file;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
-        }
-        rmdir($dir);
     }
 }

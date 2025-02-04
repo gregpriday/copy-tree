@@ -6,11 +6,14 @@ namespace GregPriday\CopyTree\Tests\Unit;
 
 use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
 use GregPriday\CopyTree\Filters\Ruleset\RulesetManager;
+use GregPriday\CopyTree\Tests\FilesystemHelperTrait;
 use GregPriday\CopyTree\Tests\TestCase;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 final class RulesetManagerTest extends TestCase
 {
+    use FilesystemHelperTrait;
+
     private string $testDir;
 
     private RulesetManager $manager;
@@ -98,29 +101,5 @@ final class RulesetManagerTest extends TestCase
         $rulesets = $this->manager->getAvailableRulesets();
         $this->assertIsArray($rulesets);
         $this->assertContains('auto', $rulesets);
-    }
-
-    /**
-     * Recursively remove a directory and its contents.
-     *
-     * @param  string  $dir  The directory to remove.
-     */
-    private function removeDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($dir);
     }
 }

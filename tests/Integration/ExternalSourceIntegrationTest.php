@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace GregPriday\CopyTree\Tests\Integration;
 
+use GregPriday\CopyTree\Tests\FilesystemHelperTrait;
 use GregPriday\CopyTree\Tests\TestCase;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use RuntimeException;
 
 final class ExternalSourceIntegrationTest extends TestCase
 {
+    use FilesystemHelperTrait;
+
     private string $tempDir;
 
     protected function setUp(): void
@@ -140,29 +141,5 @@ final class ExternalSourceIntegrationTest extends TestCase
 
         // Assert that the excluded external file "github-urls.md" is NOT present in the output
         $this->assertStringNotContainsString('github-urls.md', $output);
-    }
-
-    /**
-     * Recursively remove a directory and its contents.
-     *
-     * @param  string  $dir  The directory to remove.
-     */
-    private function removeDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($dir);
     }
 }

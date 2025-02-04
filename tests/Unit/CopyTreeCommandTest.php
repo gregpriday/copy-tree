@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace GregPriday\CopyTree\Tests\Unit;
 
+use GregPriday\CopyTree\Tests\FilesystemHelperTrait;
 use GregPriday\CopyTree\Tests\TestCase;
 
 final class CopyTreeCommandTest extends TestCase
 {
+    use FilesystemHelperTrait;
+
     /**
      * @var string Path to the temporary test directory
      */
@@ -101,29 +104,5 @@ final class CopyTreeCommandTest extends TestCase
         $this->assertStringNotContainsString('Test content 2', $output);
         $this->assertStringNotContainsString('Test readme', $output);
         $this->assertStringNotContainsString('Test notes', $output);
-    }
-
-    /**
-     * Recursively delete a directory and its contents.
-     *
-     * @param  string  $dir  The directory to remove.
-     */
-    private function removeDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-        $iterator = new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS);
-        $files = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::CHILD_FIRST);
-
-        foreach ($files as $file) {
-            /** @var \SplFileInfo $file */
-            if ($file->isDir()) {
-                rmdir($file->getRealPath());
-            } else {
-                unlink($file->getRealPath());
-            }
-        }
-        rmdir($dir);
     }
 }
