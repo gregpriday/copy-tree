@@ -1,15 +1,31 @@
 <?php
 
-namespace GregPriday\CopyTree\Utilities;
+namespace GregPriday\CopyTree\External;
 
-use GregPriday\CopyTree\Filters\Ruleset\RulesetFilter;
+use GregPriday\CopyTree\Filters\Ruleset\LocalRulesetFilter;
 use GregPriday\CopyTree\Utilities\Git\GitHubUrlHandler;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class ExternalSourceProcessor
+/**
+ * ExternalSourceHandler processes external configuration items and returns a merged list of files.
+ *
+ * It resolves each external item (specified with a "source" and "destination" key, plus optional "rules")
+ * by:
+ *  - Resolving the source path (using GitHubUrlHandler for GitHub URLs, or relative/absolute paths)
+ *  - Scanning the resolved source directory for files
+ *  - Optionally applying filtering rules (via LocalRulesetFilter)
+ *  - Remapping each file’s relative path by prefixing it with the destination path.
+ *
+ * The resulting array is formatted as:
+ *   [
+ *     ['path' => 'remapped/path/to/file.ext', 'file' => SplFileInfo],
+ *     ...
+ *   ]
+ */
+class ExternalSourceHandler
 {
     private array $externalItems;
 
@@ -73,14 +89,13 @@ class ExternalSourceProcessor
             // Apply optional filtering if "rules" are provided.
             if (is_array($rules)) {
                 try {
-                    $externalRuleset = RulesetFilter::fromArray(['rules' => $rules], $resolvedSource);
+                    $externalRuleset = LocalRulesetFilter::fromArray(['rules' => $rules], $resolvedSource);
                     $files = $externalRuleset->filter($files);
                 } catch (\Exception $e) {
                     if ($this->io) {
                         $this->io->warning("Failed to apply filtering rules for external source {$source}: ".$e->getMessage());
                     }
-                    // Decide whether to continue without filtering or skip the item.
-                    // Here we continue without filtering.
+                    // Continue without filtering if an error occurs.
                 }
             }
 

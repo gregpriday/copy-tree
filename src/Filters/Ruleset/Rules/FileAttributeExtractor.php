@@ -1,6 +1,6 @@
 <?php
 
-namespace GregPriday\CopyTree\Ruleset\Rules;
+namespace GregPriday\CopyTree\Filters\Ruleset\Rules;
 
 use finfo;
 use InvalidArgumentException;
