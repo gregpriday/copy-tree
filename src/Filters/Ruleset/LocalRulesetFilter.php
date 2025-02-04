@@ -6,7 +6,6 @@ use GregPriday\CopyTree\Filters\FileFilterInterface;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\FileAttributeExtractor;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\Rule;
 use GregPriday\CopyTree\Filters\Ruleset\Rules\RuleEvaluator;
-// Added use statement for FilteredDirIterator
 use InvalidArgumentException;
 use RuntimeException;
 use SplFileInfo;
@@ -14,8 +13,9 @@ use SplFileInfo;
 /**
  * LocalRulesetFilter handles filtering of local files based on a JSON-defined ruleset.
  *
- * This class is responsible solely for filtering local files using rules, global exclude rules,
- * and always-include/exclude lists. Any logic related to external source processing has been removed.
+ * This class is responsible for filtering local files using rules, global exclude rules,
+ * and always-include/exclude lists. It now also stores any external configuration provided
+ * in the ruleset JSON so that it can be later used by external processing components.
  *
  * It implements the FileFilterInterface so that upstream consumers of the filtering logic do not
  * require any changes.
@@ -54,6 +54,13 @@ class LocalRulesetFilter implements FileFilterInterface
      * Optional description for the filter (used for logging and debugging).
      */
     private ?string $description = null;
+
+    /**
+     * External configuration items from the ruleset.
+     *
+     * This property will store the content from the "external" key of the ruleset JSON.
+     */
+    private array $externalItems = [];
 
     public function __construct(string $basePath)
     {
@@ -121,9 +128,22 @@ class LocalRulesetFilter implements FileFilterInterface
             }
         }
 
-        // External configuration is intentionally ignored in this local filter.
+        // Preserve external configuration instead of ignoring it.
+        if (isset($data['external']) && is_array($data['external'])) {
+            $engine->externalItems = $data['external'];
+        }
 
         return $engine;
+    }
+
+    /**
+     * Retrieve the external configuration items from the ruleset.
+     *
+     * @return array|null Array of external configuration items, or null if none exist.
+     */
+    public function getExternal(): ?array
+    {
+        return ! empty($this->externalItems) ? $this->externalItems : null;
     }
 
     /**
@@ -227,7 +247,6 @@ class LocalRulesetFilter implements FileFilterInterface
         if (! is_dir($this->basePath)) {
             throw new RuntimeException("Base path does not exist: {$this->basePath}");
         }
-
         $iterator = new \RecursiveIteratorIterator(
             new FilteredDirIterator(
                 $this->basePath,
@@ -235,7 +254,6 @@ class LocalRulesetFilter implements FileFilterInterface
             ),
             \RecursiveIteratorIterator::SELF_FIRST
         );
-
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 $relativePath = $this->getRelativePath($file);
@@ -259,7 +277,6 @@ class LocalRulesetFilter implements FileFilterInterface
         if ($this->description !== null) {
             return $this->description;
         }
-
         $parts = [];
         if (! empty($this->includeRuleSets)) {
             $parts[] = sprintf('%d include rule sets', count($this->includeRuleSets));
@@ -318,29 +335,24 @@ class LocalRulesetFilter implements FileFilterInterface
         if ($this->attributeExtractor->isImage($file)) {
             return false;
         }
-
         // Check always-exclude list first.
         if ($this->isAlwaysExcluded($relativePath)) {
             return false;
         }
-
         // If file is in the always-include list, include it immediately.
         if ($this->isAlwaysIncluded($relativePath)) {
             return true;
         }
-
         // Apply global exclude rules.
         foreach ($this->globalExcludeRules as $rule) {
             if ($this->ruleEvaluator->evaluateRule($rule, $file)) {
                 return false;
             }
         }
-
         // If no include rule sets are defined, include the file.
         if (empty($this->includeRuleSets)) {
             return true;
         }
-
         // Check each include rule set; if the file matches all rules in any set, include it.
         foreach ($this->includeRuleSets as $ruleSet) {
             if ($this->matchesAllRules($file, $ruleSet)) {

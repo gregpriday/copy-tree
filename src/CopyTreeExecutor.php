@@ -36,6 +36,7 @@ class CopyTreeExecutor
             $this->validateConfiguration();
             $pipeline = $this->createPipeline();
             $this->logPipelineConfiguration($pipeline);
+
             $localFiles = $this->getInitialFiles();
             $filteredFiles = $this->executeFilterPipeline($pipeline, $localFiles);
 
@@ -108,7 +109,7 @@ class CopyTreeExecutor
     /**
      * Merge external files with the local files.
      *
-     * This method checks for an "external" configuration in the ruleset (via getExternal()),
+     * This method checks for external configuration (via getExternal()),
      * processes those external items using ExternalSourceHandler, and then merges
      * the resulting file list with the local file list.
      *
@@ -119,14 +120,9 @@ class CopyTreeExecutor
      */
     private function mergeExternalFiles(array $localFiles): array
     {
-        // Check if the local ruleset provides external configuration.
-        if (! method_exists($this->config->getRuleset(), 'getExternal')) {
-            // No external configuration defined; return local files as is.
-            return $localFiles;
-        }
-
+        // Retrieve external configuration from the ruleset.
         $externalItems = $this->config->getRuleset()->getExternal();
-        if (empty($externalItems) || ! is_array($externalItems)) {
+        if (empty($externalItems)) {
             return $localFiles;
         }
 
@@ -148,7 +144,6 @@ class CopyTreeExecutor
             $mergedFiles[$extFile['path']] = $extFile;
         }
 
-        // Return the merged files as a re-indexed array.
         return array_values($mergedFiles);
     }
 
@@ -163,11 +158,11 @@ class CopyTreeExecutor
      */
     private function generateOutput(array $filteredFiles): array
     {
-        // Generate the tree view (XML markup provided by the view).
+        // Generate the tree view.
         $treeOutput = FileTreeView::render($filteredFiles);
 
         // Start with a namespaced root element.
-        $combinedOutput = '<ct:project>'."\n";
+        $combinedOutput = "<ct:project>\n";
         $combinedOutput .= "<ct:tree>\n".$treeOutput."\n</ct:tree>\n";
 
         if (! $this->onlyTree) {
@@ -216,21 +211,12 @@ class CopyTreeExecutor
         }
 
         if ($pipeline->hasFilters()) {
-            $this->io->writeln(
-                'Configured filters:',
-                OutputInterface::VERBOSITY_VERBOSE
-            );
+            $this->io->writeln('Configured filters:', OutputInterface::VERBOSITY_VERBOSE);
             foreach ($pipeline->getFilterDescriptions() as $description) {
-                $this->io->writeln(
-                    "- {$description}",
-                    OutputInterface::VERBOSITY_VERBOSE
-                );
+                $this->io->writeln("- {$description}", OutputInterface::VERBOSITY_VERBOSE);
             }
         } else {
-            $this->io->writeln(
-                'No filters configured, using raw file list',
-                OutputInterface::VERBOSITY_VERBOSE
-            );
+            $this->io->writeln('No filters configured, using raw file list', OutputInterface::VERBOSITY_VERBOSE);
         }
     }
 }

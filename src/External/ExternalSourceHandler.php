@@ -12,12 +12,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * ExternalSourceHandler processes external configuration items and returns a merged list of files.
  *
- * This class is solely responsible for handling external sources defined under the "external" key.
- * It performs the following tasks:
- *
- *  - Resolves external sources (either GitHub URLs or local directories).
- *  - Applies optional filtering rules (if provided) using a LocalRulesetFilter.
- *  - Remaps file paths by prefixing them with the configured destination.
+ * This class handles external sources defined under the "external" key by:
+ *  - Resolving external sources (either GitHub URLs or local directories).
+ *  - Applying optional filtering rules using a LocalRulesetFilter.
+ *  - Remapping file paths by prefixing them with the configured destination.
  *
  * The output is an array of files in the following format:
  *   [
@@ -93,6 +91,7 @@ class ExternalSourceHandler
             // Apply external filtering rules if provided.
             if (is_array($rules)) {
                 try {
+                    // Build a temporary ruleset with the provided rules and apply it.
                     $externalRuleset = LocalRulesetFilter::fromArray(['rules' => $rules], $resolvedSource);
                     $files = $externalRuleset->filter($files);
                 } catch (\Exception $e) {
@@ -183,6 +182,7 @@ class ExternalSourceHandler
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
         );
+
         foreach ($iterator as $file) {
             /** @var SplFileInfo $file */
             if ($file->isFile()) {
